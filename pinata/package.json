@@ -1,0 +1,21 @@
+{
+  "name": "pdsw-pinata-service",
+  "version": "1.0.0",
+  "description": "Standalone Node.js microservice for secure file validation, SHA-256 hash generation, and Pinata IPFS pinning for PDSW",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node server/test.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "form-data": "^4.0.1",
+    "formdata-node": "^6.0.3",
+    "multer": "^1.4.5-lts.1",
+    "pinata": "^2.5.6"
+  }
+}
