@@ -1,10 +1,11 @@
-import { create } from 'zustand';
-import { User, Role } from '@/types';
-import { AuthService } from '@/services/auth.service';
-import { hasPermission, Module, Action } from '@/lib/rbac';
-import { getRoleDashboard, normalizeRole } from '@/lib/role-utils';
+import { create } from "zustand";
+import { User, Role } from "@/types";
+import { AuthService } from "@/services/auth.service";
+import { hasPermission, Module, Action } from "@/lib/rbac";
+import { getRoleDashboard, normalizeRole } from "@/lib/role-utils";
 
-export type AuthStep = 'IDLE' | 'CONNECTING' | 'SIGNING' | 'VERIFYING' | 'AUTHENTICATED';
+export type AuthStep =
+  "IDLE" | "CONNECTING" | "SIGNING" | "VERIFYING" | "AUTHENTICATED";
 
 interface AuthState {
   user: User | null;
@@ -28,9 +29,9 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  role: 'BENEFICIARY',
+  role: "BENEFICIARY",
   walletAddress: null,
-  authStep: 'IDLE',
+  authStep: "IDLE",
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
@@ -50,43 +51,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isInitialized: true,
         });
       } else {
-        set({ user: null, walletAddress: null, isAuthenticated: false, isInitialized: true });
+        set({
+          user: null,
+          walletAddress: null,
+          isAuthenticated: false,
+          isInitialized: true,
+        });
       }
     } catch {
-      set({ user: null, walletAddress: null, isAuthenticated: false, isInitialized: true });
+      set({
+        user: null,
+        walletAddress: null,
+        isAuthenticated: false,
+        isInitialized: true,
+      });
     } finally {
       set({ isLoading: false });
     }
 
     // Attach MetaMask Event Listeners in browser
-    if (typeof window !== 'undefined' && window.ethereum?.on) {
-      window.ethereum.on('accountsChanged', async (accounts: string[]) => {
+    if (typeof window !== "undefined" && window.ethereum?.on) {
+      window.ethereum.on("accountsChanged", async (accounts: string[]) => {
         const currentUser = get().user;
         if (!accounts || accounts.length === 0) {
           // Disconnected
           await get().logout();
         } else if (currentUser && currentUser.walletAddress) {
-          if (accounts[0].toLowerCase() !== currentUser.walletAddress.toLowerCase()) {
-            console.log('🔄 MetaMask account changed. Invalidating previous session.');
+          if (
+            accounts[0].toLowerCase() !==
+            currentUser.walletAddress.toLowerCase()
+          ) {
+            console.log(
+              "🔄 MetaMask account changed. Invalidating previous session.",
+            );
             await get().logout();
           }
         }
       });
 
-      window.ethereum.on('chainChanged', () => {
+      window.ethereum.on("chainChanged", () => {
         // Chain changed - recommended to refresh or verify
       });
 
-      window.ethereum.on('disconnect', async () => {
+      window.ethereum.on("disconnect", async () => {
         await get().logout();
       });
     }
   },
 
   loginWithMetaMask: async (role: Role) => {
-    set({ isLoading: true, authStep: 'CONNECTING' });
+    set({ isLoading: true, authStep: "CONNECTING" });
     try {
-      set({ authStep: 'SIGNING' });
+      set({ authStep: "SIGNING" });
       const { user, redirectUrl } = await AuthService.loginWithMetaMask(role);
       set({
         user,
@@ -94,18 +110,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         walletAddress: user.walletAddress || null,
         isAuthenticated: true,
         isInitialized: true,
-        authStep: 'AUTHENTICATED',
+        authStep: "AUTHENTICATED",
       });
       return { redirectUrl };
     } catch (err) {
-      set({ authStep: 'IDLE' });
+      set({ authStep: "IDLE" });
       throw err;
     } finally {
       set({ isLoading: false });
     }
   },
-
-
 
   logout: async () => {
     set({ isLoading: true });
@@ -113,10 +127,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await AuthService.logout();
       set({
         user: null,
-        role: 'BENEFICIARY',
+        role: "BENEFICIARY",
         walletAddress: null,
         isAuthenticated: false,
-        authStep: 'IDLE',
+        authStep: "IDLE",
       });
     } finally {
       set({ isLoading: false });

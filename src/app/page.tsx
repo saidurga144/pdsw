@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { HeroSection } from '@/components/landing/HeroSection';
-import { PlatformPillars } from '@/components/landing/PlatformPillars';
-import { SystemWorkflow } from '@/components/landing/SystemWorkflow';
-import { RoleEcosystem } from '@/components/landing/RoleEcosystem';
+import React from "react";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { PlatformPillars } from "@/components/landing/PlatformPillars";
+import { SystemWorkflow } from "@/components/landing/SystemWorkflow";
+import { RoleEcosystem } from "@/components/landing/RoleEcosystem";
 
 export default function LandingHomePage() {
   return (
@@ -22,7 +22,10 @@ export default function LandingHomePage() {
       <RoleEcosystem />
 
       {/* 5. About section anchor */}
-      <section id="about" className="py-14 border-t border-border bg-background scroll-mt-14">
+      <section
+        id="about"
+        className="py-14 border-t border-border bg-background scroll-mt-14"
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-foreground bg-secondary px-3 py-1 rounded-md border border-border">
             Architecture Whitepaper
@@ -31,7 +34,14 @@ export default function LandingHomePage() {
             About the PDSW Security Framework
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-            The <strong className="text-foreground">AI-Driven Privacy-Preserving IPFS-Based Framework</strong> is a national-scale cyber-physical welfare distribution architecture combining machine learning anomaly detection, SHA-256 cryptographic state hashing, and decentralized IPFS provenance to deliver fraud-resistant, tamper-evident public distribution.
+            The{" "}
+            <strong className="text-foreground">
+              AI-Driven Privacy-Preserving IPFS-Based Framework
+            </strong>{" "}
+            is a national-scale cyber-physical welfare distribution architecture
+            combining machine learning anomaly detection, SHA-256 cryptographic
+            state hashing, and decentralized IPFS provenance to deliver
+            fraud-resistant, tamper-evident public distribution.
           </p>
           <div className="flex justify-center gap-3">
             <a

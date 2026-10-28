@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { withAuth, getClientIp } from '@/server/middleware/auth.middleware';
-import { ServerOfficerService } from '@/server/services/officer.service';
+import { NextResponse } from "next/server";
+import { withAuth, getClientIp } from "@/server/middleware/auth.middleware";
+import { ServerOfficerService } from "@/server/services/officer.service";
 
 export const POST = withAuth(
   async (req, { user, params }) => {
@@ -13,10 +13,10 @@ export const POST = withAuth(
       body.status,
       body.reviewNotes,
       user.userId,
-      ipAddress
+      ipAddress,
     );
 
     return NextResponse.json(result);
   },
-  { requiredRoles: ['OFFICER', 'ADMIN'] }
+  { requiredRoles: ["OFFICER", "ADMIN"] },
 );

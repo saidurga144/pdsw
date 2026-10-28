@@ -1,30 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { WalletAuthService } from '@/server/auth/wallet-auth';
-import { getClientIp } from '@/server/middleware/auth.middleware';
-import { DEFAULT_CHAIN_ID } from '@/lib/metamask';
+import { NextRequest, NextResponse } from "next/server";
+import { WalletAuthService } from "@/server/auth/wallet-auth";
+import { getClientIp } from "@/server/middleware/ip";
+import { DEFAULT_CHAIN_ID } from "@/lib/metamask";
+import { RateLimiter } from "@/server/middleware/rateLimit.middleware";
+
+const ETH_ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
+
+function validateAddress(address: string | null): NextResponse | null {
+  if (!address || address.length > 42 || !ETH_ADDR_RE.test(address)) {
+    return NextResponse.json(
+      { success: false, error: "Invalid Ethereum wallet address format." },
+      { status: 400 },
+    );
+  }
+  return null;
+}
 
 export async function GET(req: NextRequest) {
+  const ip = getClientIp(req);
+  const limit = RateLimiter.checkRateLimit(`nonce:${ip}`, {
+    windowMs: 300_000,
+    maxRequests: 20,
+  });
+  if (!limit.allowed) {
+    const res = NextResponse.json(
+      { success: false, error: "Too many nonce requests. Please retry later." },
+      { status: 429 },
+    );
+    res.headers.set("Retry-After", String(limit.retryAfterSeconds || 60));
+    return res;
+  }
+
   const { searchParams } = req.nextUrl;
-  const address = searchParams.get('address');
+  const address = searchParams.get("address");
+  const addrError = validateAddress(address);
+  if (addrError) return addrError;
 
-  if (!address) {
-    return NextResponse.json(
-      { success: false, error: 'Ethereum wallet address is required.' },
-      { status: 400 }
-    );
-  }
-
-  // Validate address format (0x followed by 40 hex chars)
-  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-    return NextResponse.json(
-      { success: false, error: 'Invalid Ethereum wallet address format.' },
-      { status: 400 }
-    );
-  }
-
-  const host = req.headers.get('host') || 'localhost:3000';
-  const domain = host.split(':')[0];
-  const { nonce, issuedAt, expiresAt } = WalletAuthService.generateNonce(address);
+  const host = req.headers.get("host") || "localhost:3000";
+  const domain = host.split(":")[0];
+  const { nonce, issuedAt, expiresAt } =
+    WalletAuthService.generateNonce(address!);
 
   return NextResponse.json({
     success: true,
@@ -38,27 +53,30 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const limit = RateLimiter.checkRateLimit(`nonce:${ip}`, {
+    windowMs: 300_000,
+    maxRequests: 20,
+  });
+  if (!limit.allowed) {
+    const res = NextResponse.json(
+      { success: false, error: "Too many nonce requests. Please retry later." },
+      { status: 429 },
+    );
+    res.headers.set("Retry-After", String(limit.retryAfterSeconds || 60));
+    return res;
+  }
+
   try {
     const body = await req.json();
     const address = body.address;
+    const addrError = validateAddress(address);
+    if (addrError) return addrError;
 
-    if (!address) {
-      return NextResponse.json(
-        { success: false, error: 'Ethereum wallet address is required.' },
-        { status: 400 }
-      );
-    }
-
-    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid Ethereum wallet address format.' },
-        { status: 400 }
-      );
-    }
-
-    const host = req.headers.get('host') || 'localhost:3000';
-    const domain = host.split(':')[0];
-    const { nonce, issuedAt, expiresAt } = WalletAuthService.generateNonce(address);
+    const host = req.headers.get("host") || "localhost:3000";
+    const domain = host.split(":")[0];
+    const { nonce, issuedAt, expiresAt } =
+      WalletAuthService.generateNonce(address);
 
     return NextResponse.json({
       success: true,
@@ -71,8 +89,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to generate authentication nonce.' },
-      { status: 500 }
+      {
+        success: false,
+        error: "Failed to generate authentication nonce.",
+      },
+      { status: 500 },
     );
   }
 }

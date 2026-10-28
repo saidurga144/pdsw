@@ -1,9 +1,17 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { UserCheck, ShieldCheck, Database, Cpu, Lock, CheckCircle2, ArrowDown } from 'lucide-react';
-import { SecurityStatus } from './SecurityStatus';
+import React from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  UserCheck,
+  ShieldCheck,
+  Database,
+  Cpu,
+  Lock,
+  CheckCircle2,
+  ArrowDown,
+} from "lucide-react";
+import { SecurityStatus } from "./SecurityStatus";
 
 export const HeroVisualization: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -11,7 +19,9 @@ export const HeroVisualization: React.FC = () => {
   return (
     <div className="relative w-full max-w-lg mx-auto flex flex-col items-center">
       <div className="relative w-full overflow-hidden rounded-[1.5rem] border border-border bg-card p-5 shadow-xl shadow-slate-200/70 space-y-4">
-        <div className="absolute right-5 top-5 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.18em] text-primary"><span className="size-1.5 rounded-full bg-primary" /> Live ledger</div>
+        <div className="absolute right-5 top-5 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.18em] text-primary">
+          <span className="size-1.5 rounded-full bg-primary" /> Live ledger
+        </div>
         <div className="flex justify-center">
           <motion.div
             initial={{ scale: 0.98, opacity: 0 }}
@@ -61,32 +71,54 @@ export const HeroVisualization: React.FC = () => {
             <div className="p-1.5 bg-secondary/50 rounded-md text-primary mb-1">
               <Cpu className="size-4" />
             </div>
-            <span className="text-[10px] font-bold text-foreground uppercase">AI Engine</span>
-            <span className="text-[9px] text-muted-foreground font-mono">Risk Scan</span>
+            <span className="text-[10px] font-bold text-foreground uppercase">
+              AI Engine
+            </span>
+            <span className="text-[9px] text-muted-foreground font-mono">
+              Risk Scan
+            </span>
           </motion.div>
 
           <motion.div
             animate={shouldReduceMotion ? {} : { y: [0, -2, 0] }}
-            transition={{ repeat: Infinity, duration: 4, delay: 0.6, ease: "easeInOut" }}
+            transition={{
+              repeat: Infinity,
+              duration: 4,
+              delay: 0.6,
+              ease: "easeInOut",
+            }}
             className="flex flex-col items-center rounded-xl border border-border bg-white p-3 text-center shadow-sm transition-colors hover:border-primary/60"
           >
             <div className="p-1.5 bg-secondary/50 rounded-md text-primary mb-1">
               <ShieldCheck className="size-4" />
             </div>
-            <span className="text-[10px] font-bold text-foreground uppercase">State Hash</span>
-            <span className="text-[9px] text-muted-foreground font-mono">SHA-256</span>
+            <span className="text-[10px] font-bold text-foreground uppercase">
+              State Hash
+            </span>
+            <span className="text-[9px] text-muted-foreground font-mono">
+              SHA-256
+            </span>
           </motion.div>
 
           <motion.div
             animate={shouldReduceMotion ? {} : { y: [0, -2, 0] }}
-            transition={{ repeat: Infinity, duration: 4, delay: 1.2, ease: "easeInOut" }}
+            transition={{
+              repeat: Infinity,
+              duration: 4,
+              delay: 1.2,
+              ease: "easeInOut",
+            }}
             className="flex flex-col items-center rounded-xl border border-border bg-white p-3 text-center shadow-sm transition-colors hover:border-primary/60"
           >
             <div className="p-1.5 bg-secondary/50 rounded-md text-primary mb-1">
               <Database className="size-4" />
             </div>
-            <span className="text-[10px] font-bold text-foreground uppercase">IPFS DAG</span>
-            <span className="text-[9px] text-muted-foreground font-mono">CID Pinned</span>
+            <span className="text-[10px] font-bold text-foreground uppercase">
+              IPFS DAG
+            </span>
+            <span className="text-[9px] text-muted-foreground font-mono">
+              CID Pinned
+            </span>
           </motion.div>
         </div>
 

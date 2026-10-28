@@ -1,12 +1,8 @@
-"""User account persistence helpers.
-
-MongoDB is the primary account store. For local development, if MongoDB cannot
-be initialised because Atlas/network access is unavailable, the backend falls
-back to the existing SQLite users table so login/register flows remain usable.
-"""
+"""User account persistence helpers supporting MongoDB with SQLite fallback."""
 
 import datetime
 import logging
+import secrets
 from typing import Any, Optional
 
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -67,7 +63,9 @@ async def find_user_by_email(db: AsyncSession, email: str) -> Optional[dict[str,
         try:
             return users_col.find_one({"email": email})
         except PyMongoError as exc:
-            logger.warning("MongoDB lookup by email failed; falling back to SQLite: %s", exc)
+            logger.warning(
+                "MongoDB lookup by email failed; falling back to SQLite: %s", exc
+            )
 
     result = await db.execute(select(User).where(User.email == email))
     return _sqlite_user_to_doc(result.scalars().first())
@@ -79,7 +77,9 @@ async def find_user_by_id(db: AsyncSession, user_id: str) -> Optional[dict[str, 
         try:
             return users_col.find_one({"_id": user_id})
         except PyMongoError as exc:
-            logger.warning("MongoDB lookup by id failed; falling back to SQLite: %s", exc)
+            logger.warning(
+                "MongoDB lookup by id failed; falling back to SQLite: %s", exc
+            )
 
     result = await db.execute(select(User).where(User.id == user_id))
     return _sqlite_user_to_doc(result.scalars().first())
@@ -98,7 +98,9 @@ async def find_user_by_wallet(
                 query["_id"] = {"$ne": exclude_user_id}
             return users_col.find_one(query, {"email": 1})
         except PyMongoError as exc:
-            logger.warning("MongoDB lookup by wallet failed; falling back to SQLite: %s", exc)
+            logger.warning(
+                "MongoDB lookup by wallet failed; falling back to SQLite: %s", exc
+            )
 
     query = select(User).where(User.wallet_address == wallet_address)
     if exclude_user_id:
@@ -112,12 +114,18 @@ async def insert_user(db: AsyncSession, user_doc: dict[str, Any]) -> None:
     if users_col is not None:
         try:
             users_col.insert_one(dict(user_doc))
-            logger.info("User inserted into MongoDB auth store – email: %s", user_doc.get("email"))
+            logger.info(
+                "User inserted into MongoDB auth store – email: %s",
+                user_doc.get("email"),
+            )
             return
         except DuplicateKeyError as exc:
             raise DuplicateUserError("User already exists.") from exc
         except PyMongoError as exc:
-            logger.error("MongoDB insert failed; refusing SQLite fallback to avoid split-brain: %s", exc)
+            logger.error(
+                "MongoDB insert failed; refusing SQLite fallback to avoid split-brain: %s",
+                exc,
+            )
             raise DuplicateUserError(
                 f"Failed to persist user account in MongoDB: {exc}"
             ) from exc
@@ -150,7 +158,9 @@ async def update_user(db: AsyncSession, user_id: str, updates: dict[str, Any]) -
             users_col.update_one({"_id": user_id}, {"$set": updates})
             return
         except DuplicateKeyError as exc:
-            raise DuplicateUserError("User update violates a unique constraint.") from exc
+            raise DuplicateUserError(
+                "User update violates a unique constraint."
+            ) from exc
         except PyMongoError as exc:
             logger.warning("MongoDB update failed; falling back to SQLite: %s", exc)
 
@@ -160,7 +170,16 @@ async def update_user(db: AsyncSession, user_id: str, updates: dict[str, Any]) -
         return
 
     for key, value in updates.items():
-        if key in {"email", "password_hash", "role", "full_name", "phone", "jurisdiction", "wallet_address", "status"}:
+        if key in {
+            "email",
+            "password_hash",
+            "role",
+            "full_name",
+            "phone",
+            "jurisdiction",
+            "wallet_address",
+            "status",
+        }:
             setattr(sqlite_user, key, value)
     sqlite_user.updated_at = _utc_now()
 
@@ -172,7 +191,6 @@ async def update_user(db: AsyncSession, user_id: str, updates: dict[str, Any]) -
 
 
 async def set_user_status(db: AsyncSession, user_id: str, account_status: str) -> bool:
-    """Updates only the persistent account status while preserving all account data."""
     normalized_status = account_status.strip().upper()
     if normalized_status not in {"ACTIVE", "INACTIVE", "SUSPENDED"}:
         raise ValueError(f"Unsupported account status: {account_status}")
@@ -180,16 +198,26 @@ async def set_user_status(db: AsyncSession, user_id: str, account_status: str) -
     users_col = _mongo_collection_or_none()
     updated = False
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
-    timestamp_key = "activated_at" if normalized_status == "ACTIVE" else "deactivated_at"
+    timestamp_key = (
+        "activated_at" if normalized_status == "ACTIVE" else "deactivated_at"
+    )
     if users_col is not None:
         try:
             res = users_col.update_one(
                 {"_id": user_id},
-                {"$set": {"status": normalized_status, timestamp_key: now_iso, "updated_at": now_iso}}
+                {
+                    "$set": {
+                        "status": normalized_status,
+                        timestamp_key: now_iso,
+                        "updated_at": now_iso,
+                    }
+                },
             )
             if res.matched_count > 0:
                 updated = True
-                logger.info("User %s status set to %s in MongoDB.", user_id, normalized_status)
+                logger.info(
+                    "User %s status set to %s in MongoDB.", user_id, normalized_status
+                )
         except PyMongoError as exc:
             logger.warning("MongoDB status update failed: %s", exc)
 
@@ -206,17 +234,14 @@ async def set_user_status(db: AsyncSession, user_id: str, account_status: str) -
 
 
 async def deactivate_user(db: AsyncSession, user_id: str) -> bool:
-    """Deactivates a user account without deleting or modifying account data."""
     return await set_user_status(db, user_id, "INACTIVE")
 
 
 async def activate_user(db: AsyncSession, user_id: str) -> bool:
-    """Reactivates the same user account without recreating it."""
     return await set_user_status(db, user_id, "ACTIVE")
 
 
 async def hard_delete_user(db: AsyncSession, user_id: str) -> bool:
-    """Permanently deletes a user from MongoDB and SQLite."""
     users_col = _mongo_collection_or_none()
     deleted = False
     if users_col is not None:
@@ -242,9 +267,9 @@ async def hard_delete_user(db: AsyncSession, user_id: str) -> bool:
 _MEMORY_RESET_TOKENS: dict[str, dict[str, Any]] = {}
 
 
-async def create_password_reset_token(db: AsyncSession, user_id: str, email: str) -> str:
-    """Generates a secure single-use password reset token valid for 15 minutes."""
-    import secrets
+async def create_password_reset_token(
+    db: AsyncSession, user_id: str, email: str
+) -> str:
     token = secrets.token_urlsafe(32)
     now = datetime.datetime.now(datetime.timezone.utc)
     expires_at = now + datetime.timedelta(minutes=15)
@@ -268,8 +293,9 @@ async def create_password_reset_token(db: AsyncSession, user_id: str, email: str
     return token
 
 
-async def verify_and_burn_password_reset_token(db: AsyncSession, token: str) -> Optional[dict[str, Any]]:
-    """Validates and burns a one-time password reset token."""
+async def verify_and_burn_password_reset_token(
+    db: AsyncSession, token: str
+) -> Optional[dict[str, Any]]:
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     users_col = _mongo_collection_or_none()
     if users_col is not None:
@@ -279,9 +305,13 @@ async def verify_and_burn_password_reset_token(db: AsyncSession, token: str) -> 
             if doc:
                 exp_str = doc.get("expires_at", "")
                 if exp_str:
-                    exp = datetime.datetime.fromisoformat(exp_str.replace("Z", "+00:00"))
+                    exp = datetime.datetime.fromisoformat(
+                        exp_str.replace("Z", "+00:00")
+                    )
                     if exp > now_utc:
-                        db_mongo["password_resets"].update_one({"_id": doc["_id"]}, {"$set": {"used": True}})
+                        db_mongo["password_resets"].update_one(
+                            {"_id": doc["_id"]}, {"$set": {"used": True}}
+                        )
                         return doc
                 return None
         except Exception as exc:

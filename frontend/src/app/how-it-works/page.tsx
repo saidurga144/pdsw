@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { SystemWorkflow } from '@/components/landing/SystemWorkflow';
+import React from "react";
+import { SystemWorkflow } from "@/components/landing/SystemWorkflow";
 
 export default function HowItWorksPage() {
   return (
@@ -14,7 +14,8 @@ export default function HowItWorksPage() {
           How PDSW Protects Welfare Distribution
         </h1>
         <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          A step-by-step walkthrough of state transition hashing, IPFS decentralized DAG commits, and real-time AI risk analysis.
+          A step-by-step walkthrough of state transition hashing, IPFS
+          decentralized DAG commits, and real-time AI risk analysis.
         </p>
       </div>
 

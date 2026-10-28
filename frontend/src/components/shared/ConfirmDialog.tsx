@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { AlertTriangle, ShieldAlert, X } from 'lucide-react';
+import React from "react";
+import { AlertTriangle, ShieldAlert, X } from "lucide-react";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -21,10 +21,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   title,
   description,
-  confirmText = 'Confirm Action',
-  cancelText = 'Cancel',
+  confirmText = "Confirm Action",
+  cancelText = "Cancel",
   isDestructive = true,
-  auditPreviewMessage = 'This action will generate an immutable audit log and IPFS evidence entry.',
+  auditPreviewMessage = "This action will generate an immutable audit log and IPFS evidence entry.",
 }) => {
   if (!isOpen) return null;
 
@@ -38,21 +38,31 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-base text-foreground">{title}</h3>
-              <p className="text-xs text-muted-foreground">Security Control Confirmation</p>
+              <p className="text-xs text-muted-foreground">
+                Security Control Confirmation
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="shrink-0 text-muted-foreground hover:text-foreground" aria-label="Close confirmation dialog">
+          <button
+            onClick={onClose}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Close confirmation dialog"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="responsive-modal-body space-y-3">
-          <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {description}
+          </p>
 
           {auditPreviewMessage && (
             <div className="p-2.5 bg-background border border-border rounded-md flex items-start gap-2 text-[11px] text-foreground font-mono">
               <AlertTriangle className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-              <span className="technical-value-wrap min-w-0">{auditPreviewMessage}</span>
+              <span className="technical-value-wrap min-w-0">
+                {auditPreviewMessage}
+              </span>
             </div>
           )}
         </div>
@@ -71,8 +81,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             }}
             className={`px-4 py-2 text-xs font-semibold rounded-md transition-colors shadow-subtle ${
               isDestructive
-                ? 'bg-destructive hover:bg-destructive/90 text-white'
-                : 'bg-primary hover:bg-primary-hover text-white'
+                ? "bg-destructive hover:bg-destructive/90 text-white"
+                : "bg-primary hover:bg-primary-hover text-white"
             }`}
           >
             {confirmText}

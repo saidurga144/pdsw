@@ -1,13 +1,15 @@
-import { AuditService } from '@/server/services/audit.service';
-import { AIAnomalyService } from '@/server/services/ai-anomaly.service';
+import { AuditService } from "@/server/services/audit.service";
+import { AIAnomalyService } from "@/server/services/ai-anomaly.service";
 
 const FASTAPI_URL = (
-  process.env.FASTAPI_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8002'
-).replace('localhost', '127.0.0.1');
+  process.env.FASTAPI_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://127.0.0.1:8002"
+).replace("localhost", "127.0.0.1");
 
 function authHeaders(token?: string): Record<string, string> {
-  const h: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) h['Authorization'] = `Bearer ${token}`;
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) h["Authorization"] = `Bearer ${token}`;
   return h;
 }
 
@@ -21,53 +23,67 @@ export class ServerOfficerService {
    * Requires a valid officer Bearer token.
    */
   static async getBeneficiaries(token?: string) {
-      const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries`, {
-        method: 'GET',
-        headers: authHeaders(token),
-        cache: 'no-store',
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success || !Array.isArray(data.beneficiaries)) {
-        throw new Error(data.detail || data.error || `Unable to load beneficiaries (HTTP ${res.status}).`);
-      }
+    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries`, {
+      method: "GET",
+      headers: authHeaders(token),
+      cache: "no-store",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success || !Array.isArray(data.beneficiaries)) {
+      throw new Error(
+        data.detail ||
+          data.error ||
+          `Unable to load beneficiaries (HTTP ${res.status}).`,
+      );
+    }
 
-      return data.beneficiaries.map((u: any) => ({
-        id: u._id || u.id,
-        rationCardId: u.ration_card_number || `RC-${String(u._id || u.id).slice(-6).toUpperCase()}`,
-        fullName: u.full_name || u.name || u.email,
-        email: u.email,
-        phone: u.phone || '',
-        address: {
-          doorNo: '',
-          street: '',
-          district: u.jurisdiction || '',
-          state: '',
-          pincode: '',
-          pdsCenterId: '',
-          pdsCenterName: u.jurisdiction || '',
-        },
-        rationCategory: (u.card_category || 'PHH') as any,
-        familyCount: 1,
-        familyMembers: [],
-        verificationStatus: (String(u.status || 'ACTIVE').toUpperCase() === 'ACTIVE' ? 'VERIFIED' : 'VERIFICATION_PENDING') as any,
-        riskScore: 5,
-        riskLevel: 'LOW' as const,
-        currentHash: '0x000',
-        latestIPFSCid: '',
-        createdAt: u.created_at || new Date().toISOString(),
-        updatedAt: u.updated_at || new Date().toISOString(),
-        status: String(u.status || 'ACTIVE').toUpperCase() === 'DEACTIVATED' ? 'INACTIVE' : String(u.status || 'ACTIVE').toUpperCase(),
-        eligibility: {
-          beneficiaryId: u._id || u.id,
-          category: (u.card_category || 'PHH') as any,
-          monthlyEntitlements: [],
-          monthlyIncome: 0,
-          isBPL: true,
-          lastReviewedAt: new Date().toISOString(),
-          nextReviewDue: new Date().toISOString(),
-          status: 'ELIGIBLE' as const,
-        },
-      }));
+    return data.beneficiaries.map((u: any) => ({
+      id: u._id || u.id,
+      rationCardId:
+        u.ration_card_number ||
+        `RC-${String(u._id || u.id)
+          .slice(-6)
+          .toUpperCase()}`,
+      fullName: u.full_name || u.name || u.email,
+      email: u.email,
+      phone: u.phone || "",
+      address: {
+        doorNo: "",
+        street: "",
+        district: u.jurisdiction || "",
+        state: "",
+        pincode: "",
+        pdsCenterId: "",
+        pdsCenterName: u.jurisdiction || "",
+      },
+      rationCategory: (u.card_category || "PHH") as any,
+      familyCount: 1,
+      familyMembers: [],
+      verificationStatus: (String(u.status || "ACTIVE").toUpperCase() ===
+      "ACTIVE"
+        ? "VERIFIED"
+        : "VERIFICATION_PENDING") as any,
+      riskScore: 5,
+      riskLevel: "LOW" as const,
+      currentHash: "0x000",
+      latestIPFSCid: "",
+      createdAt: u.created_at || new Date().toISOString(),
+      updatedAt: u.updated_at || new Date().toISOString(),
+      status:
+        String(u.status || "ACTIVE").toUpperCase() === "DEACTIVATED"
+          ? "INACTIVE"
+          : String(u.status || "ACTIVE").toUpperCase(),
+      eligibility: {
+        beneficiaryId: u._id || u.id,
+        category: (u.card_category || "PHH") as any,
+        monthlyEntitlements: [],
+        monthlyIncome: 0,
+        isBPL: true,
+        lastReviewedAt: new Date().toISOString(),
+        nextReviewDue: new Date().toISOString(),
+        status: "ELIGIBLE" as const,
+      },
+    }));
   }
 
   /**
@@ -87,34 +103,39 @@ export class ServerOfficerService {
     },
     officerId: string,
     ipAddress?: string,
-    token?: string
+    token?: string,
   ) {
     if (!token) {
-      throw new Error('Officer session token missing. Please log out and log in again.');
+      throw new Error(
+        "Officer session token missing. Please log out and log in again.",
+      );
     }
 
-    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/create-beneficiary`, {
-      method: 'POST',
-      headers: authHeaders(token),
-      body: JSON.stringify({
-        email: data.email.trim().toLowerCase(),
-        password: data.password,
-        full_name: data.fullName.trim(),
-        phone: data.phone || null,
-        jurisdiction: data.jurisdiction || null,
-        wallet_address: data.walletAddress || null,
-        ration_card_number: data.rationCardNumber || null,
-        card_category: data.cardCategory || null,
-      }),
-    });
+    const res = await fetch(
+      `${FASTAPI_URL}/api/auth/officer/create-beneficiary`,
+      {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          email: data.email.trim().toLowerCase(),
+          password: data.password,
+          full_name: data.fullName.trim(),
+          phone: data.phone || null,
+          jurisdiction: data.jurisdiction || null,
+          wallet_address: data.walletAddress || null,
+          ration_card_number: data.rationCardNumber || null,
+          card_category: data.cardCategory || null,
+        }),
+      },
+    );
 
     const responseData = await res.json().catch(() => ({}));
 
     if (!res.ok) {
       const detail =
-        (typeof responseData.detail === 'string' && responseData.detail) ||
+        (typeof responseData.detail === "string" && responseData.detail) ||
         (Array.isArray(responseData.detail) &&
-          responseData.detail.map((d: any) => d.msg).join('; ')) ||
+          responseData.detail.map((d: any) => d.msg).join("; ")) ||
         responseData.error ||
         `Failed to create beneficiary account (HTTP ${res.status}).`;
       throw new Error(detail);
@@ -122,13 +143,17 @@ export class ServerOfficerService {
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'PDS_OFFICER',
-      action: 'ENROLL_BENEFICIARY',
-      resource: 'BENEFICIARY',
+      actorRole: "PDS_OFFICER",
+      action: "ENROLL_BENEFICIARY",
+      resource: "BENEFICIARY",
       resourceId: responseData._id || responseData.id || data.email,
-      newState: { email: data.email, fullName: data.fullName, role: 'BENEFICIARY' },
+      newState: {
+        email: data.email,
+        fullName: data.fullName,
+        role: "BENEFICIARY",
+      },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return {
@@ -136,7 +161,7 @@ export class ServerOfficerService {
       email: responseData.email,
       fullName: responseData.full_name || responseData.name,
       status: responseData.status,
-      message: 'Beneficiary account created and persisted in the database.',
+      message: "Beneficiary account created and persisted in the database.",
     };
   }
 
@@ -157,9 +182,9 @@ export class ServerOfficerService {
     authMode: string;
     ipAddress?: string;
   }) {
-    const crypto = await import('crypto');
-    const distId = `txn-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-    const transactionCode = `TXN-PDS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const crypto = await import("crypto");
+    const distId = `txn-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
+    const transactionCode = `TXN-PDS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
     const now = new Date().toISOString();
 
     const aiAssessment = await AIAnomalyService.evaluateDistribution({
@@ -172,8 +197,9 @@ export class ServerOfficerService {
       authMode: params.authMode,
     });
 
-    const { HashingService } = await import('@/server/security/hashing.service');
-    const { IPFSService } = await import('@/server/security/ipfs.service');
+    const { HashingService } =
+      await import("@/server/security/hashing.service");
+    const { IPFSService } = await import("@/server/security/ipfs.service");
 
     const canonicalTxn = {
       distId,
@@ -194,8 +220,8 @@ export class ServerOfficerService {
     const stateHash = HashingService.generateSHA256(canonicalTxn);
     const ipfsUpload = await IPFSService.uploadManifest({
       recordId: distId,
-      entityType: 'DISTRIBUTION',
-      hashAlgorithm: 'SHA-256',
+      entityType: "DISTRIBUTION",
+      hashAlgorithm: "SHA-256",
       integrityHash: stateHash,
     });
     const ipfsCid = ipfsUpload.cid;
@@ -215,16 +241,16 @@ export class ServerOfficerService {
       transaction_code: transactionCode,
       state_hash: stateHash,
       ipfs_cid: ipfsCid,
-      status: 'COMPLETED',
+      status: "COMPLETED",
       distributed_at: now,
     };
     runtimeDistributions.unshift(record);
 
     await AuditService.recordEvent({
       actorId: params.officerId,
-      actorRole: 'OFFICER',
-      action: 'DISTRIBUTE_COMMODITIES',
-      resource: 'DISTRIBUTION',
+      actorRole: "OFFICER",
+      action: "DISTRIBUTE_COMMODITIES",
+      resource: "DISTRIBUTION",
       resourceId: distId,
       newState: {
         transactionCode,
@@ -235,7 +261,8 @@ export class ServerOfficerService {
         aiRiskScore: aiAssessment.riskScore,
       },
       ipAddress: params.ipAddress,
-      outcome: aiAssessment.riskLevel === 'CRITICAL' ? 'ANOMALY_DETECTED' : 'SUCCESS',
+      outcome:
+        aiAssessment.riskLevel === "CRITICAL" ? "ANOMALY_DETECTED" : "SUCCESS",
     });
 
     return {
@@ -244,8 +271,8 @@ export class ServerOfficerService {
       stateHash,
       ipfsCid,
       aiAssessment,
-      status: 'COMPLETED',
-      message: 'Commodity distribution verified and recorded on ledger.',
+      status: "COMPLETED",
+      message: "Commodity distribution verified and recorded on ledger.",
     };
   }
 
@@ -262,53 +289,58 @@ export class ServerOfficerService {
     },
     officerId: string,
     ipAddress?: string,
-    token?: string
+    token?: string,
   ) {
-    if (!token) throw new Error('Officer session token missing.');
+    if (!token) throw new Error("Officer session token missing.");
 
     // Fetch user to verify they are BENEFICIARY before updating
     const checkRes = await fetch(`${FASTAPI_URL}/api/auth/users`, {
-      method: 'GET',
+      method: "GET",
       headers: authHeaders(token),
-      cache: 'no-store',
+      cache: "no-store",
     });
     if (checkRes.ok) {
       const checkData = await checkRes.json();
-      const target = (checkData.users || []).find((u: any) => (u._id || u.id) === userId);
-      if (target && String(target.role || '').toUpperCase() !== 'BENEFICIARY') {
-        throw new Error('PDS Officer can only edit BENEFICIARY accounts.');
+      const target = (checkData.users || []).find(
+        (u: any) => (u._id || u.id) === userId,
+      );
+      if (target && String(target.role || "").toUpperCase() !== "BENEFICIARY") {
+        throw new Error("PDS Officer can only edit BENEFICIARY accounts.");
       }
     }
 
-    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}`, {
-      method: 'PATCH',
-      headers: authHeaders(token),
-      body: JSON.stringify({
-        full_name: data.fullName,
-        phone: data.phone || null,
-        jurisdiction: data.jurisdiction || null,
-        card_category: data.cardCategory || null,
-      }),
-    });
+    const res = await fetch(
+      `${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          full_name: data.fullName,
+          phone: data.phone || null,
+          jurisdiction: data.jurisdiction || null,
+          card_category: data.cardCategory || null,
+        }),
+      },
+    );
 
     const responseData = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(
-        (typeof responseData.detail === 'string' && responseData.detail) ||
-        responseData.error ||
-        `Failed to update beneficiary (HTTP ${res.status}).`
+        (typeof responseData.detail === "string" && responseData.detail) ||
+          responseData.error ||
+          `Failed to update beneficiary (HTTP ${res.status}).`,
       );
     }
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'PDS_OFFICER',
-      action: 'UPDATE_BENEFICIARY',
-      resource: 'BENEFICIARY',
+      actorRole: "PDS_OFFICER",
+      action: "UPDATE_BENEFICIARY",
+      resource: "BENEFICIARY",
       resourceId: userId,
       newState: data,
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return responseData;
@@ -322,32 +354,35 @@ export class ServerOfficerService {
     userId: string,
     officerId: string,
     ipAddress?: string,
-    token?: string
+    token?: string,
   ) {
-    if (!token) throw new Error('Officer session token missing.');
+    if (!token) throw new Error("Officer session token missing.");
 
-    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}`, {
-      method: 'DELETE',
-      headers: authHeaders(token),
-    });
+    const res = await fetch(
+      `${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(token),
+      },
+    );
 
     const responseData = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(
-        (typeof responseData.detail === 'string' && responseData.detail) ||
-        responseData.error ||
-        `Failed to deactivate beneficiary (HTTP ${res.status}).`
+        (typeof responseData.detail === "string" && responseData.detail) ||
+          responseData.error ||
+          `Failed to deactivate beneficiary (HTTP ${res.status}).`,
       );
     }
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'PDS_OFFICER',
-      action: 'DEACTIVATE_BENEFICIARY',
-      resource: 'BENEFICIARY',
+      actorRole: "PDS_OFFICER",
+      action: "DEACTIVATE_BENEFICIARY",
+      resource: "BENEFICIARY",
       resourceId: userId,
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return responseData;
@@ -355,37 +390,43 @@ export class ServerOfficerService {
 
   static async updateBeneficiaryStatus(
     userId: string,
-    accountStatus: 'ACTIVE' | 'INACTIVE',
+    accountStatus: "ACTIVE" | "INACTIVE",
     officerId: string,
     ipAddress?: string,
-    token?: string
+    token?: string,
   ) {
-    if (!token) throw new Error('Officer session token missing.');
+    if (!token) throw new Error("Officer session token missing.");
 
-    const action = accountStatus === 'ACTIVE' ? 'activate' : 'deactivate';
-    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}/${action}`, {
-      method: 'PATCH',
-      headers: authHeaders(token),
-    });
+    const action = accountStatus === "ACTIVE" ? "activate" : "deactivate";
+    const res = await fetch(
+      `${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}/${action}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(token),
+      },
+    );
 
     const responseData = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(
-        (typeof responseData.detail === 'string' && responseData.detail) ||
-        responseData.error ||
-        `Failed to ${action} beneficiary (HTTP ${res.status}).`
+        (typeof responseData.detail === "string" && responseData.detail) ||
+          responseData.error ||
+          `Failed to ${action} beneficiary (HTTP ${res.status}).`,
       );
     }
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'PDS_OFFICER',
-      action: accountStatus === 'ACTIVE' ? 'BENEFICIARY_ACTIVATED' : 'BENEFICIARY_DEACTIVATED',
-      resource: 'BENEFICIARY',
+      actorRole: "PDS_OFFICER",
+      action:
+        accountStatus === "ACTIVE"
+          ? "BENEFICIARY_ACTIVATED"
+          : "BENEFICIARY_DEACTIVATED",
+      resource: "BENEFICIARY",
       resourceId: userId,
       newState: { status: accountStatus },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return responseData;
@@ -399,32 +440,35 @@ export class ServerOfficerService {
     userId: string,
     officerId: string,
     ipAddress?: string,
-    token?: string
+    token?: string,
   ) {
-    if (!token) throw new Error('Officer session token missing.');
+    if (!token) throw new Error("Officer session token missing.");
 
-    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}/reset-password`, {
-      method: 'POST',
-      headers: authHeaders(token),
-    });
+    const res = await fetch(
+      `${FASTAPI_URL}/api/auth/officer/beneficiaries/${encodeURIComponent(userId)}/reset-password`,
+      {
+        method: "POST",
+        headers: authHeaders(token),
+      },
+    );
 
     const responseData = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(
-        (typeof responseData.detail === 'string' && responseData.detail) ||
-        responseData.error ||
-        `Failed to reset password (HTTP ${res.status}).`
+        (typeof responseData.detail === "string" && responseData.detail) ||
+          responseData.error ||
+          `Failed to reset password (HTTP ${res.status}).`,
       );
     }
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'PDS_OFFICER',
-      action: 'RESET_BENEFICIARY_PASSWORD',
-      resource: 'BENEFICIARY',
+      actorRole: "PDS_OFFICER",
+      action: "RESET_BENEFICIARY_PASSWORD",
+      resource: "BENEFICIARY",
       resourceId: userId,
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return responseData;
@@ -436,10 +480,10 @@ export class ServerOfficerService {
 
   static async reviewChangeRequest(
     requestId: string,
-    status: 'APPROVED' | 'REJECTED' | 'UNDER_INVESTIGATION',
+    status: "APPROVED" | "REJECTED" | "UNDER_INVESTIGATION",
     reviewNotes: string,
     officerId: string,
-    ipAddress?: string
+    ipAddress?: string,
   ) {
     const item = runtimeChangeRequests.find((cr) => cr.id === requestId);
     if (item) {
@@ -451,13 +495,13 @@ export class ServerOfficerService {
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'OFFICER',
+      actorRole: "OFFICER",
       action: `CHANGE_REQUEST_${status}`,
-      resource: 'CHANGE_REQUEST',
+      resource: "CHANGE_REQUEST",
       resourceId: requestId,
       newState: { status, reviewNotes },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return { success: true, message: `Request status updated to ${status}.` };

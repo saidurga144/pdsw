@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
-import { useNotificationStore } from '@/stores/notification.store';
-import { useUIStore } from '@/stores/ui.store';
-import { Search, Bell, Menu, Shield, LogOut } from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth.store";
+import { useNotificationStore } from "@/stores/notification.store";
+import { useUIStore } from "@/stores/ui.store";
+import { Search, Bell, Menu, Shield, LogOut } from "lucide-react";
+import Link from "next/link";
 
 export const HeaderNavbar: React.FC = () => {
   const router = useRouter();
@@ -14,13 +14,14 @@ export const HeaderNavbar: React.FC = () => {
   const { unreadCount } = useNotificationStore();
   const { toggleSidebar, setSearchOpen } = useUIStore();
 
-  const notificationHref = role === 'BENEFICIARY'
-    ? '/beneficiary/notifications'
-    : `/${role.toLowerCase()}/dashboard`;
+  const notificationHref =
+    role === "BENEFICIARY"
+      ? "/beneficiary/notifications"
+      : `/${role.toLowerCase()}/dashboard`;
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/');
+    router.replace("/");
   };
 
   return (
@@ -35,7 +36,10 @@ export const HeaderNavbar: React.FC = () => {
             <Menu className="w-5 h-5" />
           </button>
 
-          <Link href="/" className="flex items-center gap-2.5 font-bold tracking-tight text-foreground">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 font-bold tracking-tight text-foreground"
+          >
             <div className="relative flex size-8 items-center justify-center overflow-hidden rounded-xl border border-primary/50 bg-card shadow-subtle">
               <img
                 src="/logo.png"
@@ -44,7 +48,7 @@ export const HeaderNavbar: React.FC = () => {
               />
             </div>
             <div className="hidden sm:block">
-                <span className="display-type block text-base font-bold text-foreground uppercase tracking-wider leading-none">
+              <span className="display-type block text-base font-bold text-foreground uppercase tracking-wider leading-none">
                 PDS Welfare Platform
               </span>
             </div>
@@ -81,15 +85,18 @@ export const HeaderNavbar: React.FC = () => {
           {/* User Profile */}
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-xs font-bold text-primary">
-              {user?.name?.substring(0, 2).toUpperCase() || '0x'}
+              {user?.name?.substring(0, 2).toUpperCase() || "0x"}
             </div>
             <div className="hidden xl:block text-left">
-              <p className="text-xs font-semibold text-foreground leading-tight">{user?.name}</p>
+              <p className="text-xs font-semibold text-foreground leading-tight">
+                {user?.name}
+              </p>
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
-                    <span className="eyebrow text-[9px]">{role}</span>
+                <span className="eyebrow text-[9px]">{role}</span>
                 {user?.walletAddress && (
                   <span className="text-muted-foreground bg-muted px-1 py-0.2 rounded text-[9px]">
-                    {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                    {user.walletAddress.slice(0, 6)}...
+                    {user.walletAddress.slice(-4)}
                   </span>
                 )}
               </div>
@@ -110,7 +117,9 @@ export const HeaderNavbar: React.FC = () => {
       {/* Mobile Role Bar */}
       <div className="md:hidden px-4 py-1.5 border-t border-border bg-muted/30 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Portal:</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Portal:
+          </span>
           <span className="font-bold text-foreground uppercase">{role}</span>
           <span className="size-1.5 rounded-full bg-primary" />
         </div>

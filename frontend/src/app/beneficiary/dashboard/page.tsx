@@ -1,18 +1,29 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { Beneficiary } from '@/types';
-import { useAuthStore } from '@/stores/auth.store';
-import { useBeneficiaryStore } from '@/stores/beneficiary.store';
-import { StatsCard } from '@/components/dashboard/StatsCard';
-import { IntegrityBadge } from '@/components/integrity/IntegrityBadge';
-import { RiskIndicator } from '@/components/dashboard/RiskIndicator';
-import { Users, FileCheck, History, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import React, { useEffect } from "react";
+import { Beneficiary } from "@/types";
+import { useAuthStore } from "@/stores/auth.store";
+import { useBeneficiaryStore } from "@/stores/beneficiary.store";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { IntegrityBadge } from "@/components/integrity/IntegrityBadge";
+import { RiskIndicator } from "@/components/dashboard/RiskIndicator";
+import {
+  Users,
+  FileCheck,
+  History,
+  ShieldCheck,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function BeneficiaryDashboard() {
   const { user } = useAuthStore();
-  const { profile: beneficiary, isLoading: loading, ensureLoaded } = useBeneficiaryStore();
+  const {
+    profile: beneficiary,
+    isLoading: loading,
+    ensureLoaded,
+  } = useBeneficiaryStore();
 
   // Ensures profile is loaded — no-op if already cached and fresh
   useEffect(() => {
@@ -23,48 +34,65 @@ export default function BeneficiaryDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] space-y-3">
         <Loader2 className="size-8 text-primary animate-spin" />
-        <p className="text-xs text-muted-foreground font-mono">Loading citizen command dashboard...</p>
+        <p className="text-xs text-muted-foreground font-mono">
+          Loading citizen command dashboard...
+        </p>
       </div>
     );
   }
 
   const ben = beneficiary || {
-    id: user?.id || 'BEN-USER',
-    rationCardId: `RC-${user?.id?.slice(-6).toUpperCase() || 'DEL-101'}`,
-    fullName: user?.name || 'Authenticated Citizen',
-    phone: user?.phone || '+91 98000 00000',
+    id: user?.id || "BEN-USER",
+    rationCardId: `RC-${user?.id?.slice(-6).toUpperCase() || "DEL-101"}`,
+    fullName: user?.name || "Authenticated Citizen",
+    phone: user?.phone || "+91 98000 00000",
     address: {
-      doorNo: 'H-42',
-      street: 'Block B, Sector 4',
-      district: user?.jurisdiction?.split(',')[0]?.trim() || 'South Delhi',
-      state: user?.jurisdiction?.split(',')[1]?.trim() || 'Delhi',
-      pincode: '110016',
-      pdsCenterId: 'FPS-DEL-102',
-      pdsCenterName: `Fair Price Shop #102, ${user?.jurisdiction || 'South Delhi'}`,
+      doorNo: "H-42",
+      street: "Block B, Sector 4",
+      district: user?.jurisdiction?.split(",")[0]?.trim() || "South Delhi",
+      state: user?.jurisdiction?.split(",")[1]?.trim() || "Delhi",
+      pincode: "110016",
+      pdsCenterId: "FPS-DEL-102",
+      pdsCenterName: `Fair Price Shop #102, ${user?.jurisdiction || "South Delhi"}`,
     },
-    rationCategory: 'PHH' as const,
+    rationCategory: "PHH" as const,
     familyCount: 1,
     familyMembers: [],
-    verificationStatus: 'VERIFIED' as const,
+    verificationStatus: "VERIFIED" as const,
     riskScore: 5,
-    riskLevel: 'LOW' as const,
-    currentHash: '0x000',
-    latestIPFSCid: 'Qm000',
+    riskLevel: "LOW" as const,
+    currentHash: "0x000",
+    latestIPFSCid: "Qm000",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     eligibility: {
-      beneficiaryId: user?.id || 'BEN-USER',
-      category: 'PHH' as const,
+      beneficiaryId: user?.id || "BEN-USER",
+      category: "PHH" as const,
       monthlyEntitlements: [
-        { commodity: 'Rice (Fortified)', quantity: 20, unit: 'KG', subsidizedPricePerUnit: 3.0 },
-        { commodity: 'Wheat (Whole Grain)', quantity: 15, unit: 'KG', subsidizedPricePerUnit: 2.0 },
-        { commodity: 'Refined Sugar', quantity: 2, unit: 'KG', subsidizedPricePerUnit: 13.5 },
+        {
+          commodity: "Rice (Fortified)",
+          quantity: 20,
+          unit: "KG",
+          subsidizedPricePerUnit: 3.0,
+        },
+        {
+          commodity: "Wheat (Whole Grain)",
+          quantity: 15,
+          unit: "KG",
+          subsidizedPricePerUnit: 2.0,
+        },
+        {
+          commodity: "Refined Sugar",
+          quantity: 2,
+          unit: "KG",
+          subsidizedPricePerUnit: 13.5,
+        },
       ],
       monthlyIncome: 10000,
       isBPL: true,
       lastReviewedAt: new Date().toISOString(),
       nextReviewDue: new Date().toISOString(),
-      status: 'ELIGIBLE' as const,
+      status: "ELIGIBLE" as const,
     },
   };
 
@@ -76,11 +104,22 @@ export default function BeneficiaryDashboard() {
             <span className="bg-secondary text-primary font-mono text-[11px] px-2.5 py-0.5 rounded border border-border font-bold">
               ID: {ben.id}
             </span>
-            <IntegrityBadge status={ben.verificationStatus === 'VERIFIED' ? 'VERIFIED' : 'VERIFICATION_PENDING'} size="sm" />
+            <IntegrityBadge
+              status={
+                ben.verificationStatus === "VERIFIED"
+                  ? "VERIFIED"
+                  : "VERIFICATION_PENDING"
+              }
+              size="sm"
+            />
           </div>
           <h1 className="ben-title text-foreground">{ben.fullName}</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Card No: <span className="font-mono text-foreground font-semibold">{ben.rationCardId}</span> • {ben.address.pdsCenterName}
+            Card No:{" "}
+            <span className="font-mono text-foreground font-semibold">
+              {ben.rationCardId}
+            </span>{" "}
+            • {ben.address.pdsCenterName}
           </p>
         </div>
 
@@ -129,8 +168,12 @@ export default function BeneficiaryDashboard() {
         <div className="lg:col-span-2 bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <h2 className="ben-section-title text-foreground">Monthly Subsidized Welfare Quota</h2>
-              <p className="text-xs text-muted-foreground">Current monthly allocation available at your assigned FPS</p>
+              <h2 className="ben-section-title text-foreground">
+                Monthly Subsidized Welfare Quota
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Current monthly allocation available at your assigned FPS
+              </p>
             </div>
             <Link
               href="/beneficiary/eligibility"
@@ -147,16 +190,24 @@ export default function BeneficiaryDashboard() {
                 className="flex items-center justify-between p-3.5 rounded-md bg-muted/40 border border-border hover:border-primary/40 transition-colors"
               >
                 <div>
-                  <h3 className="font-bold text-xs text-foreground">{item.commodity}</h3>
+                  <h3 className="font-bold text-xs text-foreground">
+                    {item.commodity}
+                  </h3>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Subsidized Rate: <span className="font-mono text-primary font-bold">₹{item.subsidizedPricePerUnit}</span> per {item.unit}
+                    Subsidized Rate:{" "}
+                    <span className="font-mono text-primary font-bold">
+                      ₹{item.subsidizedPricePerUnit}
+                    </span>{" "}
+                    per {item.unit}
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="text-lg font-extrabold text-foreground font-mono">
                     {item.quantity} {item.unit}
                   </span>
-                  <span className="text-[10px] text-muted-foreground uppercase font-mono block">Monthly Limit</span>
+                  <span className="text-[10px] text-muted-foreground uppercase font-mono block">
+                    Monthly Limit
+                  </span>
                 </div>
               </div>
             ))}

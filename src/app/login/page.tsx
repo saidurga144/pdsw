@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { Suspense } from 'react';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { LoginForm } from '@/components/auth/LoginForm';
+import React, { Suspense } from "react";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 function LoginFallback() {
   return (

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 interface RequestTimingRecord {
   timestamps: number[];
@@ -21,7 +21,10 @@ export class BotDetectionService {
   /**
    * Analyzes request velocity, interval variance, and unique path diversity to flag automated bots.
    */
-  static evaluateBotBehavior(req: NextRequest, clientIp: string): {
+  static evaluateBotBehavior(
+    req: NextRequest,
+    clientIp: string,
+  ): {
     isBot: boolean;
     confidence: number; // 0 - 100
     reason?: string;
@@ -69,7 +72,8 @@ export class BotDetectionService {
     }
 
     // 3. Rapid directory crawling: > 12 unique paths requested in under 3 seconds
-    const timeSpan = record.timestamps[record.timestamps.length - 1] - record.timestamps[0];
+    const timeSpan =
+      record.timestamps[record.timestamps.length - 1] - record.timestamps[0];
     if (timeSpan < 3000 && record.uniquePaths.size >= 12) {
       return {
         isBot: true,

@@ -1,23 +1,31 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { MOCK_AUDIT_TRAIL } from '@/mock-data/pds-data';
-import { IntegrityBadge } from '@/components/integrity/IntegrityBadge';
-import { Eye, Search, Filter, Download } from 'lucide-react';
+import React, { useState } from "react";
+import { MOCK_AUDIT_TRAIL } from "@/mock-data/pds-data";
+import { IntegrityBadge } from "@/components/integrity/IntegrityBadge";
+import { Eye, Search, Filter, Download } from "lucide-react";
 
 export default function AuditTrailExplorerPage() {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const filtered = MOCK_AUDIT_TRAIL.filter(
-    (a) => a.actor.toLowerCase().includes(search.toLowerCase()) || a.recordId.toLowerCase().includes(search.toLowerCase()) || a.action.toLowerCase().includes(search.toLowerCase())
+    (a) =>
+      a.actor.toLowerCase().includes(search.toLowerCase()) ||
+      a.recordId.toLowerCase().includes(search.toLowerCase()) ||
+      a.action.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-100">Immutable Audit Trail Explorer</h1>
-          <p className="text-xs text-slate-400">Forensic search across all administrative actions, state transitions, and IPFS DAG commits</p>
+          <h1 className="text-xl font-bold text-slate-100">
+            Immutable Audit Trail Explorer
+          </h1>
+          <p className="text-xs text-slate-400">
+            Forensic search across all administrative actions, state
+            transitions, and IPFS DAG commits
+          </p>
         </div>
 
         <div className="relative w-full sm:w-72">
@@ -48,30 +56,57 @@ export default function AuditTrailExplorerPage() {
           <tbody className="divide-y divide-slate-800/60 font-mono">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400 font-sans">
+                <td
+                  colSpan={7}
+                  className="px-4 py-12 text-center text-slate-400 font-sans"
+                >
                   <div className="max-w-sm mx-auto flex flex-col items-center justify-center space-y-2">
-                    <p className="font-semibold text-slate-300">No Audit Events Found</p>
+                    <p className="font-semibold text-slate-300">
+                      No Audit Events Found
+                    </p>
                     <p className="text-xs text-slate-500">
-                      {search ? 'No audit trail events match your filter query.' : 'No administrative actions or state changes recorded yet in the audit log.'}
+                      {search
+                        ? "No audit trail events match your filter query."
+                        : "No administrative actions or state changes recorded yet in the audit log."}
                     </p>
                   </div>
                 </td>
               </tr>
             ) : (
               filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
-                  <td className="px-4 py-3 text-slate-400">{new Date(item.timestamp).toLocaleString()}</td>
-                  <td className="px-4 py-3 font-sans">
-                    <span className="font-semibold text-slate-200 block">{item.actor}</span>
-                    <span className="text-[10px] text-cyan-400">{item.role}</span>
+                <tr
+                  key={item.id}
+                  className="hover:bg-slate-800/50 transition-colors"
+                >
+                  <td className="px-4 py-3 text-slate-400">
+                    {new Date(item.timestamp).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-emerald-400 font-semibold">{item.action}</td>
-                  <td className="px-4 py-3 text-slate-300 font-sans">{item.entity}</td>
-                  <td className="px-4 py-3 font-bold text-cyan-300">{item.recordId}</td>
                   <td className="px-4 py-3 font-sans">
-                    <IntegrityBadge status={item.integrityStatus as any} size="sm" />
+                    <span className="font-semibold text-slate-200 block">
+                      {item.actor}
+                    </span>
+                    <span className="text-[10px] text-cyan-400">
+                      {item.role}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-400">{item.ipfsCid.substring(0, 14)}...</td>
+                  <td className="px-4 py-3 text-emerald-400 font-semibold">
+                    {item.action}
+                  </td>
+                  <td className="px-4 py-3 text-slate-300 font-sans">
+                    {item.entity}
+                  </td>
+                  <td className="px-4 py-3 font-bold text-cyan-300">
+                    {item.recordId}
+                  </td>
+                  <td className="px-4 py-3 font-sans">
+                    <IntegrityBadge
+                      status={item.integrityStatus as any}
+                      size="sm"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-400">
+                    {item.ipfsCid.substring(0, 14)}...
+                  </td>
                 </tr>
               ))
             )}

@@ -1,8 +1,27 @@
-import jwt from 'jsonwebtoken';
-import { Role } from '@/types';
+import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+import { Role } from "@/types";
+import { parseRole } from "@/lib/role-utils";
+import { isStrongServerSecret } from "@/server/security/secret-validation";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'pdsw-super-secret-cryptographic-jwt-key-2026-production-ready';
-const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '8h') as any;
+export function getConfiguredJwtSecret(): string {
+  const secret = process.env.JWT_SECRET?.trim();
+  if (!secret) {
+    throw new Error("JWT_SECRET must be configured before signing or verifying tokens.");
+  }
+  if (process.env.NODE_ENV === "production" && !isStrongServerSecret(secret)) {
+    throw new Error("JWT_SECRET must be a strong, non-placeholder production secret.");
+  }
+  return secret;
+}
+
+function getJwtExpiresIn(): SignOptions["expiresIn"] {
+  const value = process.env.JWT_EXPIRES_IN?.trim() || "8h";
+  if (/^\d+$/.test(value)) return Number(value);
+  if (/^\d+(ms|s|m|h|d|w|y)$/.test(value)) {
+    return value as SignOptions["expiresIn"];
+  }
+  throw new Error("JWT_EXPIRES_IN must be a duration such as 30m or 8h.");
+}
 
 export interface TokenPayload {
   userId: string;
@@ -17,10 +36,12 @@ export interface TokenPayload {
 /**
  * Signs a cryptographically secure JWT token for authenticated users
  */
-export function signJwtToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-    algorithm: 'HS256',
+export function signJwtToken(
+  payload: Omit<TokenPayload, "iat" | "exp">,
+): string {
+  return jwt.sign(payload, getConfiguredJwtSecret(), {
+    expiresIn: getJwtExpiresIn(),
+    algorithm: "HS256",
   });
 }
 
@@ -29,20 +50,48 @@ export function signJwtToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): string
  */
 export function verifyJwtToken(token: string): TokenPayload | null {
   try {
-    const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
-    const decoded = jwt.verify(cleanToken, JWT_SECRET) as any;
-    if (!decoded) return null;
-    if (decoded.step === 'METAMASK_PENDING') {
+    const cleanToken = token.replace(/^Bearer\s+/i, "").trim();
+    const decoded = jwt.verify(cleanToken, getConfiguredJwtSecret(), {
+      algorithms: ["HS256"],
+    });
+    if (typeof decoded === "string" || decoded.step === "METAMASK_PENDING") {
       return null;
     }
+    const claims = decoded as JwtPayload & {
+      userId?: unknown;
+      sub?: unknown;
+      role?: unknown;
+      email?: unknown;
+      fullName?: unknown;
+      name?: unknown;
+      jurisdiction?: unknown;
+    };
+    const userId =
+      typeof claims.userId === "string"
+        ? claims.userId
+        : typeof claims.sub === "string"
+          ? claims.sub
+          : null;
+    const role = parseRole(claims.role);
+    if (!userId || !role || typeof claims.email !== "string") return null;
     return {
-      ...decoded,
-      userId: decoded.userId || decoded.sub,
-      role: decoded.role,
-      email: decoded.email,
-      fullName: decoded.fullName || decoded.name || '',
-    } as TokenPayload;
-  } catch (error) {
+      userId,
+      role,
+      email: claims.email,
+      fullName:
+        typeof claims.fullName === "string"
+          ? claims.fullName
+          : typeof claims.name === "string"
+            ? claims.name
+            : "",
+      jurisdiction:
+        typeof claims.jurisdiction === "string"
+          ? claims.jurisdiction
+          : undefined,
+      iat: claims.iat,
+      exp: claims.exp,
+    };
+  } catch {
     return null;
   }
 }

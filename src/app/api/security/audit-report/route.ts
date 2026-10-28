@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { SecurityAuditService } from '@/server/security/security-audit.service';
+import { NextResponse } from "next/server";
+import { SecurityAuditService } from "@/server/security/security-audit.service";
 
 export async function GET() {
   try {
@@ -14,7 +14,7 @@ export async function GET() {
         success: false,
         error: `Security audit failed: ${error.message}`,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,10 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { MOCK_SECURITY_INCIDENTS } from '@/mock-data/pds-data';
-import { RiskIndicator } from '@/components/dashboard/RiskIndicator';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { Cpu, ShieldAlert, AlertTriangle, Lock, CheckCircle2, UserX } from 'lucide-react';
+import React, { useState } from "react";
+import { MOCK_SECURITY_INCIDENTS } from "@/mock-data/pds-data";
+import { RiskIndicator } from "@/components/dashboard/RiskIndicator";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import {
+  Cpu,
+  ShieldAlert,
+  AlertTriangle,
+  Lock,
+  CheckCircle2,
+  UserX,
+} from "lucide-react";
 
 export default function CyberAIAnalyticsPage() {
   const incident = MOCK_SECURITY_INCIDENTS[0];
@@ -18,21 +25,35 @@ export default function CyberAIAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-xl font-bold text-slate-100">Cyber AI Anomaly Behavioral Intelligence</h1>
-        <p className="text-xs text-slate-400">Explainable AI detection of officer account compromise and insider threat vectors</p>
+        <h1 className="text-xl font-bold text-slate-100">
+          Cyber AI Anomaly Behavioral Intelligence
+        </h1>
+        <p className="text-xs text-slate-400">
+          Explainable AI detection of officer account compromise and insider
+          threat vectors
+        </p>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-rose-400">{incident.id}</span>
+              <span className="font-mono text-xs font-bold text-rose-400">
+                {incident.id}
+              </span>
               <span className="px-2.5 py-0.5 bg-rose-950 text-rose-300 font-mono text-[10px] font-bold rounded border border-rose-800">
                 CRITICAL THREAT
               </span>
             </div>
-            <h2 className="text-lg font-bold text-slate-100 mt-1">{incident.title}</h2>
-            <p className="text-xs text-slate-400">Target Entity: <span className="font-semibold text-slate-200">{incident.affectedEntity}</span></p>
+            <h2 className="text-lg font-bold text-slate-100 mt-1">
+              {incident.title}
+            </h2>
+            <p className="text-xs text-slate-400">
+              Target Entity:{" "}
+              <span className="font-semibold text-slate-200">
+                {incident.affectedEntity}
+              </span>
+            </p>
           </div>
 
           <RiskIndicator score={92} level="HIGH" />
@@ -41,17 +62,29 @@ export default function CyberAIAnalyticsPage() {
         {/* Explainable AI Behavioral Comparison Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-            <span className="text-[10px] font-bold text-slate-500 uppercase block">Baseline Normal Login Pattern</span>
-            <p className="text-slate-200 font-mono font-semibold">Active Hours: 09:00 - 18:00 IST</p>
+            <span className="text-[10px] font-bold text-slate-500 uppercase block">
+              Baseline Normal Login Pattern
+            </span>
+            <p className="text-slate-200 font-mono font-semibold">
+              Active Hours: 09:00 - 18:00 IST
+            </p>
             <p className="text-slate-400">Average Requests: 4 reviews / day</p>
             <p className="text-slate-400">IP Subnet: 192.168.10.0/24</p>
           </div>
 
           <div className="bg-rose-950/40 p-4 rounded-xl border border-rose-800 space-y-2">
-            <span className="text-[10px] font-bold text-rose-400 uppercase block">Current Anomalous Behavior</span>
-            <p className="text-rose-300 font-mono font-bold">Unusual Login: 02:43 AM IST</p>
-            <p className="text-rose-300 font-bold">17 Failed Requests • 82 Sensitive Records Access</p>
-            <p className="text-rose-400 font-mono">Unauthorized IP Subnet: 103.22.11.45</p>
+            <span className="text-[10px] font-bold text-rose-400 uppercase block">
+              Current Anomalous Behavior
+            </span>
+            <p className="text-rose-300 font-mono font-bold">
+              Unusual Login: 02:43 AM IST
+            </p>
+            <p className="text-rose-300 font-bold">
+              17 Failed Requests • 82 Sensitive Records Access
+            </p>
+            <p className="text-rose-400 font-mono">
+              Unauthorized IP Subnet: 103.22.11.45
+            </p>
           </div>
         </div>
 
@@ -75,7 +108,8 @@ export default function CyberAIAnalyticsPage() {
           <div>
             {isRestricted && (
               <span className="text-xs font-bold text-rose-400 flex items-center gap-1 bg-rose-950 p-2 rounded border border-rose-800">
-                <UserX className="w-4 h-4" /> Officer Access Temporarily Suspended
+                <UserX className="w-4 h-4" /> Officer Access Temporarily
+                Suspended
               </span>
             )}
           </div>

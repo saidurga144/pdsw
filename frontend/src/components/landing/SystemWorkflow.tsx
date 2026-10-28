@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
   UserCheck,
   Lock,
@@ -9,67 +9,69 @@ import {
   Cpu,
   FileCheck,
   Eye,
-  ArrowRight
-} from 'lucide-react';
+  ArrowRight,
+} from "lucide-react";
 
 export const SystemWorkflow: React.FC = () => {
   const steps = [
     {
-      step: '01',
-      title: 'User Action',
-      desc: 'Beneficiary submits update or officer releases quota.',
+      step: "01",
+      title: "User Action",
+      desc: "Beneficiary submits update or officer releases quota.",
       icon: UserCheck,
     },
     {
-      step: '02',
-      title: 'Secure Validation',
-      desc: 'Biometric / MFA signature & RBAC authorization verified.',
+      step: "02",
+      title: "Secure Validation",
+      desc: "Biometric / MFA signature & RBAC authorization verified.",
       icon: Lock,
     },
     {
-      step: '03',
-      title: 'Database Update',
-      desc: 'Transactional update recorded within atomic state ledger.',
+      step: "03",
+      title: "Database Update",
+      desc: "Transactional update recorded within atomic state ledger.",
       icon: Database,
     },
     {
-      step: '04',
-      title: 'Hash Generation',
-      desc: 'SHA-256 state hash generated from latest snapshot.',
+      step: "04",
+      title: "Hash Generation",
+      desc: "SHA-256 state hash generated from latest snapshot.",
       icon: ShieldCheck,
     },
     {
-      step: '05',
-      title: 'AI Risk Analysis',
-      desc: 'Real-time behavioral scoring checks anomaly thresholds.',
+      step: "05",
+      title: "AI Risk Analysis",
+      desc: "Real-time behavioral scoring checks anomaly thresholds.",
       icon: Cpu,
     },
     {
-      step: '06',
-      title: 'IPFS Evidence',
-      desc: 'Cryptographic CID proof pinned to decentralized DAG.',
+      step: "06",
+      title: "IPFS Evidence",
+      desc: "Cryptographic CID proof pinned to decentralized DAG.",
       icon: FileCheck,
     },
     {
-      step: '07',
-      title: 'Audit Trail',
-      desc: 'Non-repudiable log entry visible to CAG auditors.',
+      step: "07",
+      title: "Audit Trail",
+      desc: "Non-repudiable log entry visible to CAG auditors.",
       icon: Eye,
     },
   ];
 
   return (
-    <section id="how-it-works" className="relative border-t border-border bg-card py-20 scroll-mt-14">
+    <section
+      id="how-it-works"
+      className="relative border-t border-border bg-card py-20 scroll-mt-14"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-14 max-w-3xl space-y-4 text-center">
-          <span className="eyebrow">
-            System Workflow
-          </span>
+          <span className="eyebrow">System Workflow</span>
           <h2 className="display-type text-4xl font-semibold text-foreground sm:text-5xl">
             Every action leaves a verifiable trace.
           </h2>
           <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-            Every transaction undergoes continuous cryptographic validation, AI risk scoring, and decentralized IPFS proof anchoring.
+            Every transaction undergoes continuous cryptographic validation, AI
+            risk scoring, and decentralized IPFS proof anchoring.
           </p>
         </div>
 
@@ -99,8 +101,8 @@ export const SystemWorkflow: React.FC = () => {
                       {item.desc}
                     </p>
                   </div>
+                </div>
               </div>
-            </div>
             );
           })}
         </div>

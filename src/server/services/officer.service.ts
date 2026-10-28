@@ -1,6 +1,6 @@
-import crypto from 'crypto';
-import { AuditService } from '@/server/services/audit.service';
-import { AIAnomalyService } from '@/server/services/ai-anomaly.service';
+import crypto from "crypto";
+import { AuditService } from "@/server/services/audit.service";
+import { AIAnomalyService } from "@/server/services/ai-anomaly.service";
 
 const runtimeBeneficiaries: any[] = [];
 const runtimeDistributions: any[] = [];
@@ -16,7 +16,7 @@ export class ServerOfficerService {
       return runtimeBeneficiaries.filter(
         (b) =>
           b.head_of_family?.toLowerCase().includes(q) ||
-          b.ration_card_number?.toLowerCase().includes(q)
+          b.ration_card_number?.toLowerCase().includes(q),
       );
     }
     return runtimeBeneficiaries;
@@ -47,9 +47,9 @@ export class ServerOfficerService {
       }>;
     },
     officerId: string,
-    ipAddress?: string
+    ipAddress?: string,
   ) {
-    const benId = `ben-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`;
+    const benId = `ben-${Date.now()}-${crypto.randomBytes(2).toString("hex")}`;
     const now = new Date().toISOString();
 
     const newRecord = {
@@ -65,7 +65,7 @@ export class ServerOfficerService {
       fps_shop_id: data.fpsShopId,
       fps_name: data.fpsName,
       fps_location: data.fpsLocation,
-      status: 'ACTIVE',
+      status: "ACTIVE",
       family_members: data.familyMembers || [],
       created_at: now,
       updated_at: now,
@@ -75,9 +75,9 @@ export class ServerOfficerService {
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'OFFICER',
-      action: 'ENROLL_BENEFICIARY',
-      resource: 'BENEFICIARY',
+      actorRole: "OFFICER",
+      action: "ENROLL_BENEFICIARY",
+      resource: "BENEFICIARY",
       resourceId: benId,
       newState: {
         rationCardNumber: data.rationCardNumber,
@@ -85,10 +85,13 @@ export class ServerOfficerService {
         cardCategory: data.cardCategory,
       },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
-    return { id: benId, message: 'Beneficiary enrolled successfully with verified entitlements.' };
+    return {
+      id: benId,
+      message: "Beneficiary enrolled successfully with verified entitlements.",
+    };
   }
 
   /**
@@ -107,8 +110,8 @@ export class ServerOfficerService {
     authMode: string;
     ipAddress?: string;
   }) {
-    const distId = `txn-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
-    const transactionCode = `TXN-PDS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const distId = `txn-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
+    const transactionCode = `TXN-PDS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
     const now = new Date().toISOString();
 
     // 1. Run Real-time AI Risk Evaluation
@@ -123,8 +126,9 @@ export class ServerOfficerService {
     });
 
     // 2. Generate RFC 8785 Canonical SHA-256 State Hash and upload IPFS Manifest
-    const { HashingService } = await import('@/server/security/hashing.service');
-    const { IPFSService } = await import('@/server/security/ipfs.service');
+    const { HashingService } =
+      await import("@/server/security/hashing.service");
+    const { IPFSService } = await import("@/server/security/ipfs.service");
 
     const canonicalTxn = {
       distId,
@@ -145,8 +149,8 @@ export class ServerOfficerService {
     const stateHash = HashingService.generateSHA256(canonicalTxn);
     const ipfsUpload = await IPFSService.uploadManifest({
       recordId: distId,
-      entityType: 'DISTRIBUTION',
-      hashAlgorithm: 'SHA-256',
+      entityType: "DISTRIBUTION",
+      hashAlgorithm: "SHA-256",
       integrityHash: stateHash,
     });
     const ipfsCid = ipfsUpload.cid;
@@ -166,7 +170,7 @@ export class ServerOfficerService {
       transaction_code: transactionCode,
       state_hash: stateHash,
       ipfs_cid: ipfsCid,
-      status: 'COMPLETED',
+      status: "COMPLETED",
       distributed_at: now,
     };
     runtimeDistributions.unshift(record);
@@ -174,9 +178,9 @@ export class ServerOfficerService {
     // Record Audit Event
     await AuditService.recordEvent({
       actorId: params.officerId,
-      actorRole: 'OFFICER',
-      action: 'DISTRIBUTE_COMMODITIES',
-      resource: 'DISTRIBUTION',
+      actorRole: "OFFICER",
+      action: "DISTRIBUTE_COMMODITIES",
+      resource: "DISTRIBUTION",
       resourceId: distId,
       newState: {
         transactionCode,
@@ -187,7 +191,8 @@ export class ServerOfficerService {
         aiRiskScore: aiAssessment.riskScore,
       },
       ipAddress: params.ipAddress,
-      outcome: aiAssessment.riskLevel === 'CRITICAL' ? 'ANOMALY_DETECTED' : 'SUCCESS',
+      outcome:
+        aiAssessment.riskLevel === "CRITICAL" ? "ANOMALY_DETECTED" : "SUCCESS",
     });
 
     return {
@@ -196,8 +201,8 @@ export class ServerOfficerService {
       stateHash,
       ipfsCid,
       aiAssessment,
-      status: 'COMPLETED',
-      message: 'Commodity distribution verified and recorded on ledger.',
+      status: "COMPLETED",
+      message: "Commodity distribution verified and recorded on ledger.",
     };
   }
 
@@ -213,10 +218,10 @@ export class ServerOfficerService {
    */
   static async reviewChangeRequest(
     requestId: string,
-    status: 'APPROVED' | 'REJECTED' | 'UNDER_INVESTIGATION',
+    status: "APPROVED" | "REJECTED" | "UNDER_INVESTIGATION",
     reviewNotes: string,
     officerId: string,
-    ipAddress?: string
+    ipAddress?: string,
   ) {
     const item = runtimeChangeRequests.find((cr) => cr.id === requestId);
     if (item) {
@@ -228,13 +233,13 @@ export class ServerOfficerService {
 
     await AuditService.recordEvent({
       actorId: officerId,
-      actorRole: 'OFFICER',
+      actorRole: "OFFICER",
       action: `CHANGE_REQUEST_${status}`,
-      resource: 'CHANGE_REQUEST',
+      resource: "CHANGE_REQUEST",
       resourceId: requestId,
       newState: { status, reviewNotes },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return { success: true, message: `Request status updated to ${status}.` };

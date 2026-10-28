@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useParams } from 'next/navigation';
-import { Role } from '@/types';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { LoginForm } from '@/components/auth/LoginForm';
+import React from "react";
+import { useParams } from "next/navigation";
+import { Role } from "@/types";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function RoleLoginPage() {
   const params = useParams();
   const rawRole = (params?.role as string)?.toUpperCase();
 
   const roleMap: Record<string, Role> = {
-    BENEFICIARY: 'BENEFICIARY',
-    OFFICER: 'OFFICER',
-    'PDS-OFFICER': 'OFFICER',
-    ADMIN: 'ADMIN',
-    SOC: 'SOC',
-    'SOC-ANALYST': 'SOC',
-    'SECURITY-ANALYST': 'SOC',
+    BENEFICIARY: "BENEFICIARY",
+    OFFICER: "OFFICER",
+    "PDS-OFFICER": "OFFICER",
+    ADMIN: "ADMIN",
+    SOC: "SOC",
+    "SOC-ANALYST": "SOC",
+    "SECURITY-ANALYST": "SOC",
   };
 
-  const selectedRole: Role = roleMap[rawRole] || 'BENEFICIARY';
+  const selectedRole: Role = roleMap[rawRole] || "BENEFICIARY";
 
   return (
     <div className="py-6 px-4">

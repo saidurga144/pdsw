@@ -1,18 +1,20 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
-import { PublicNavbar } from '@/components/landing/PublicNavbar';
-import { PublicFooter } from '@/components/landing/PublicFooter';
-import { HeaderNavbar } from '@/components/shared/HeaderNavbar';
-import { Sidebar } from '@/components/shared/Sidebar';
-import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
-import { GlobalCommandSearch } from '@/components/shared/GlobalCommandSearch';
-import { Shield } from 'lucide-react';
-import { normalizeRole } from '@/lib/role-utils';
+import React, { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth.store";
+import { PublicNavbar } from "@/components/landing/PublicNavbar";
+import { PublicFooter } from "@/components/landing/PublicFooter";
+import { HeaderNavbar } from "@/components/shared/HeaderNavbar";
+import { Sidebar } from "@/components/shared/Sidebar";
+import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
+import { GlobalCommandSearch } from "@/components/shared/GlobalCommandSearch";
+import { Shield } from "lucide-react";
+import { normalizeRole } from "@/lib/role-utils";
 
-export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppShell: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isInitialized, initAuth, role } = useAuthStore();
@@ -26,49 +28,56 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Determine if current route requires authentication
   const isDashboardRoute =
-    pathname.startsWith('/beneficiary') ||
-    pathname.startsWith('/officer') ||
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/auditor') ||
-    pathname.startsWith('/soc');
+    pathname.startsWith("/beneficiary") ||
+    pathname.startsWith("/officer") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/auditor") ||
+    pathname.startsWith("/soc");
 
   // Route guard: redirect unauthenticated users away from dashboard routes
   useEffect(() => {
     if (!isInitialized) return; // Wait for auth hydration
 
     if (isDashboardRoute && !isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
       return;
     }
 
     // RBAC: ensure user can only access their own role's routes
     if (isDashboardRoute && isAuthenticated) {
-      const canonicalRole = normalizeRole(role || '');
+      const canonicalRole = normalizeRole(role || "");
       const roleRouteMap: Record<string, string> = {
-        BENEFICIARY: '/beneficiary',
-        PDS_OFFICER: '/officer',
-        ADMIN: '/admin',
-        SOC_ANALYST: '/soc',
+        BENEFICIARY: "/beneficiary",
+        PDS_OFFICER: "/officer",
+        ADMIN: "/admin",
+        SOC_ANALYST: "/soc",
       };
       const expectedPrefix = roleRouteMap[canonicalRole];
       if (expectedPrefix && !pathname.startsWith(expectedPrefix)) {
-        router.replace('/unauthorized');
+        router.replace("/unauthorized");
       }
     }
-  }, [isInitialized, isAuthenticated, isDashboardRoute, pathname, role, router]);
+  }, [
+    isInitialized,
+    isAuthenticated,
+    isDashboardRoute,
+    pathname,
+    role,
+    router,
+  ]);
 
   // Auth pages where the footer AND navbar should be hidden (full-screen standalone layout)
   const isAuthPage =
-    pathname === '/login' ||
-    pathname.startsWith('/login/') ||
-    pathname === '/forgot-password' ||
-    pathname.startsWith('/forgot-password/') ||
-    pathname === '/reset-password' ||
-    pathname.startsWith('/reset-password/') ||
-    pathname === '/setup' ||
-    pathname.startsWith('/setup/') ||
-    pathname === '/unauthorized' ||
-    pathname.startsWith('/unauthorized/');
+    pathname === "/login" ||
+    pathname.startsWith("/login/") ||
+    pathname === "/forgot-password" ||
+    pathname.startsWith("/forgot-password/") ||
+    pathname === "/reset-password" ||
+    pathname.startsWith("/reset-password/") ||
+    pathname === "/setup" ||
+    pathname.startsWith("/setup/") ||
+    pathname === "/unauthorized" ||
+    pathname.startsWith("/unauthorized/");
 
   // Auth pages: completely standalone, no navbar, no footer, no extra padding — full screen
   if (isAuthPage) {
@@ -105,8 +114,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             />
           </div>
           <div className="text-center space-y-1">
-            <p className="text-sm font-bold text-foreground tracking-wide">PDSW Platform</p>
-            <p className="text-xs text-muted-foreground font-mono">Verifying session credentials...</p>
+            <p className="text-sm font-bold text-foreground tracking-wide">
+              PDSW Platform
+            </p>
+            <p className="text-xs text-muted-foreground font-mono">
+              Verifying session credentials...
+            </p>
           </div>
         </div>
       </div>

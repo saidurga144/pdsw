@@ -1,17 +1,20 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAuthStore } from '@/stores/auth.store';
-import { StatsCard } from '@/components/dashboard/StatsCard';
-import { Eye, ShieldCheck, History, FileSpreadsheet } from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { useAuthStore } from "@/stores/auth.store";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { Eye, ShieldCheck, History, FileSpreadsheet } from "lucide-react";
+import Link from "next/link";
 
 export default function AuditorDashboard() {
   const { user } = useAuthStore();
 
-  const auditorName = user?.name || 'CAG Lead Auditor';
-  const auditorId = user?.id ? `AUD-${user.id.slice(-6).toUpperCase()}` : 'AUD-004';
-  const jurisdiction = user?.jurisdiction || 'Comptroller and Auditor General (CAG)';
+  const auditorName = user?.name || "CAG Lead Auditor";
+  const auditorId = user?.id
+    ? `AUD-${user.id.slice(-6).toUpperCase()}`
+    : "AUD-004";
+  const jurisdiction =
+    user?.jurisdiction || "Comptroller and Auditor General (CAG)";
 
   return (
     <div className="space-y-6">
@@ -21,9 +24,13 @@ export default function AuditorDashboard() {
             <span className="bg-secondary text-primary font-mono text-[11px] px-2.5 py-0.5 rounded border border-border font-bold">
               {auditorId}
             </span>
-            <span className="text-xs text-muted-foreground">{jurisdiction} • Read-Only Probe</span>
+            <span className="text-xs text-muted-foreground">
+              {jurisdiction} • Read-Only Probe
+            </span>
           </div>
-          <h1 className="text-xl font-bold text-foreground">{auditorName} — Compliance Overview</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            {auditorName} — Compliance Overview
+          </h1>
         </div>
 
         <Link

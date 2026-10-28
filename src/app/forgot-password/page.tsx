@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import React, { useState } from "react";
+import Link from "next/link";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,7 +23,9 @@ export default function ForgotPasswordPage() {
         {!submitted ? (
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="text-foreground font-semibold block mb-1.5">Registered Email Address</label>
+              <label className="text-foreground font-semibold block mb-1.5">
+                Registered Email Address
+              </label>
               <div className="relative">
                 <Mail className="size-4 text-muted-foreground absolute left-3.5 top-3" />
                 <input
@@ -45,7 +47,10 @@ export default function ForgotPasswordPage() {
             </button>
 
             <div className="pt-3 text-center">
-              <Link href="/login" className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1">
+              <Link
+                href="/login"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1"
+              >
                 <ArrowLeft className="size-3.5" /> Back to Login
               </Link>
             </div>
@@ -55,9 +60,15 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-secondary text-primary border border-border">
               <CheckCircle2 className="size-6" />
             </div>
-            <h3 className="text-base font-bold text-foreground">Reset Token Dispatched</h3>
+            <h3 className="text-base font-bold text-foreground">
+              Reset Token Dispatched
+            </h3>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              If an account is associated with <span className="text-primary font-mono font-medium">{email}</span>, a cryptographic reset token has been sent.
+              If an account is associated with{" "}
+              <span className="text-primary font-mono font-medium">
+                {email}
+              </span>
+              , a cryptographic reset token has been sent.
             </p>
             <Link
               href="/login"

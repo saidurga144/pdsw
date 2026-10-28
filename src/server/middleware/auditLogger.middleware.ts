@@ -1,6 +1,6 @@
-import { NextRequest } from 'next/server';
-import { AuditService } from '@/server/services/audit.service';
-import { getClientIp } from './auth.middleware';
+import { NextRequest } from "next/server";
+import { AuditService } from "@/server/services/audit.service";
+import { getClientIp } from "./auth.middleware";
 
 export class AuditLoggerMiddleware {
   /**
@@ -13,12 +13,12 @@ export class AuditLoggerMiddleware {
     action: string;
     resource: string;
     resourceId: string;
-    outcome?: 'SUCCESS' | 'FAILURE' | 'BLOCKED_RBAC' | 'ANOMALY_DETECTED';
+    outcome?: "SUCCESS" | "FAILURE" | "BLOCKED_RBAC" | "ANOMALY_DETECTED";
     previousState?: any;
     newState?: any;
   }): Promise<void> {
     const ipAddress = getClientIp(params.req);
-    const sessionId = params.req.cookies.get('pds_session')?.value || undefined;
+    const sessionId = params.req.cookies.get("pds_session")?.value || undefined;
 
     await AuditService.recordEvent({
       actorId: params.actorId,
@@ -28,7 +28,7 @@ export class AuditLoggerMiddleware {
       resourceId: params.resourceId,
       ipAddress,
       sessionId,
-      outcome: params.outcome || 'SUCCESS',
+      outcome: params.outcome || "SUCCESS",
       previousState: params.previousState,
       newState: params.newState,
     });

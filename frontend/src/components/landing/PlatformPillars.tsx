@@ -1,47 +1,50 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Cpu, Lock, ShieldCheck, Database, ArrowUpRight } from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { Cpu, Lock, ShieldCheck, Database, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 export const PlatformPillars: React.FC = () => {
   const pillars = [
     {
-      title: 'AI Intelligence',
-      subtitle: 'Detect Anomalies & Fraud',
-      desc: 'Continuous machine learning behavioral analysis detects suspicious multi-attribute changes, ghost card patterns, and volume spikes.',
+      title: "AI Intelligence",
+      subtitle: "Detect Anomalies & Fraud",
+      desc: "Continuous machine learning behavioral analysis detects suspicious multi-attribute changes, ghost card patterns, and volume spikes.",
       icon: Cpu,
-      badge: 'ML Risk Engine',
-      link: '/admin/ai-intelligence',
+      badge: "ML Risk Engine",
+      link: "/admin/ai-intelligence",
     },
     {
-      title: 'Privacy First',
-      subtitle: 'Zero-Knowledge Protection',
-      desc: 'Citizen Aadhaar and biometric hashes are cryptographically obfuscated. Identity records are verifiable without exposing raw private credentials.',
+      title: "Privacy First",
+      subtitle: "Zero-Knowledge Protection",
+      desc: "Citizen Aadhaar and biometric hashes are cryptographically obfuscated. Identity records are verifiable without exposing raw private credentials.",
       icon: Lock,
-      badge: 'ZK Cryptography',
-      link: '/about',
+      badge: "ZK Cryptography",
+      link: "/about",
     },
     {
-      title: 'Data Integrity',
-      subtitle: 'SHA-256 Hash Verification',
-      desc: 'Every lifecycle change computes a mathematical state hash. Silent database corruption and unauthorized direct edits are immediately flagged.',
+      title: "Data Integrity",
+      subtitle: "SHA-256 Hash Verification",
+      desc: "Every lifecycle change computes a mathematical state hash. Silent database corruption and unauthorized direct edits are immediately flagged.",
       icon: ShieldCheck,
-      badge: 'State Anchoring',
-      link: '/admin/integrity',
+      badge: "State Anchoring",
+      link: "/admin/integrity",
     },
     {
-      title: 'IPFS Provenance',
-      subtitle: 'Decentralized Audit Ledger',
-      desc: 'Audit records and distribution receipts are pinned to an immutable IPFS DAG ledger, providing tamper-evident forensic non-repudiation.',
+      title: "IPFS Provenance",
+      subtitle: "Decentralized Audit Ledger",
+      desc: "Audit records and distribution receipts are pinned to an immutable IPFS DAG ledger, providing tamper-evident forensic non-repudiation.",
       icon: Database,
-      badge: 'Content-Addressed DAG',
-      link: '/admin/ipfs',
+      badge: "Content-Addressed DAG",
+      link: "/admin/ipfs",
     },
   ];
 
   return (
-    <section id="pillars" className="py-12 border-t border-border bg-background scroll-mt-14">
+    <section
+      id="pillars"
+      className="py-12 border-t border-border bg-background scroll-mt-14"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-foreground bg-secondary px-3 py-1 rounded-md border border-border">
@@ -51,7 +54,8 @@ export const PlatformPillars: React.FC = () => {
             Four Pillars of PDS Security
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Engineered to ensure zero trust, complete transparency, and immutable accountability across public welfare delivery.
+            Engineered to ensure zero trust, complete transparency, and
+            immutable accountability across public welfare delivery.
           </p>
         </div>
 
@@ -73,9 +77,15 @@ export const PlatformPillars: React.FC = () => {
                     </span>
                   </div>
 
-                  <h3 className="text-base font-bold text-foreground">{p.title}</h3>
-                  <p className="text-xs font-semibold text-primary mb-2 font-mono">{p.subtitle}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
+                  <h3 className="text-base font-bold text-foreground">
+                    {p.title}
+                  </h3>
+                  <p className="text-xs font-semibold text-primary mb-2 font-mono">
+                    {p.subtitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {p.desc}
+                  </p>
                 </div>
               </div>
             );

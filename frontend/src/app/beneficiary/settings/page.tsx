@@ -1,26 +1,32 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Shield, Key } from 'lucide-react';
+import React from "react";
+import { Shield, Key } from "lucide-react";
 
 export default function BeneficiarySettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="border-b border-border pb-4">
-        <h1 className="ben-title text-foreground">Account Security & Settings</h1>
+        <h1 className="ben-title text-foreground">
+          Account Security & Settings
+        </h1>
         <p className="text-xs text-muted-foreground">
-          Manage login credentials, active sessions, and notification preferences
+          Manage login credentials, active sessions, and notification
+          preferences
         </p>
       </div>
 
       <div className="bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
         <h2 className="ben-section-title text-foreground flex items-center gap-2 border-b border-border pb-3">
-          <Key className="size-4 text-primary shrink-0" /> Authentication &amp; Password
+          <Key className="size-4 text-primary shrink-0" /> Authentication &amp;
+          Password
         </h2>
 
         <div className="space-y-3 text-xs">
           <div>
-            <label className="text-foreground font-semibold block mb-1">Current Password</label>
+            <label className="text-foreground font-semibold block mb-1">
+              Current Password
+            </label>
             <input
               type="password"
               placeholder="••••••••••••"
@@ -29,7 +35,9 @@ export default function BeneficiarySettingsPage() {
           </div>
 
           <div>
-            <label className="text-foreground font-semibold block mb-1">New Password</label>
+            <label className="text-foreground font-semibold block mb-1">
+              New Password
+            </label>
             <input
               type="password"
               placeholder="Minimum 6 characters"
@@ -51,7 +59,9 @@ export default function BeneficiarySettingsPage() {
         <div className="p-3 bg-muted/40 border border-border rounded-md flex items-center justify-between text-xs">
           <div>
             <p className="font-bold text-foreground">Current Session</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Active Now</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Active Now
+            </p>
           </div>
           <span className="text-primary font-bold text-[10px] bg-secondary px-2 py-0.5 rounded border border-border">
             THIS DEVICE

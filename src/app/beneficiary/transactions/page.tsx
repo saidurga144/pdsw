@@ -1,15 +1,23 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Distribution } from '@/types';
-import { useAuthStore } from '@/stores/auth.store';
-import { apiClient } from '@/services/api/client';
-import { Search, CheckCircle2, ShieldCheck, History, ExternalLink, PackageOpen, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Distribution } from "@/types";
+import { useAuthStore } from "@/stores/auth.store";
+import { apiClient } from "@/services/api/client";
+import {
+  Search,
+  CheckCircle2,
+  ShieldCheck,
+  History,
+  ExternalLink,
+  PackageOpen,
+  Loader2,
+} from "lucide-react";
 
 export default function BeneficiaryTransactionsPage() {
   const { user } = useAuthStore();
   const [selectedTxn, setSelectedTxn] = useState<Distribution | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [transactions, setTransactions] = useState<Distribution[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +28,9 @@ export default function BeneficiaryTransactionsPage() {
         return;
       }
       try {
-        const res = await apiClient.get(`/beneficiary/transactions?beneficiaryId=${encodeURIComponent(user.id)}`);
+        const res = await apiClient.get(
+          `/beneficiary/transactions?beneficiaryId=${encodeURIComponent(user.id)}`,
+        );
         if (res.data?.success && Array.isArray(res.data.transactions)) {
           setTransactions(res.data.transactions);
         } else {
@@ -39,15 +49,20 @@ export default function BeneficiaryTransactionsPage() {
   const filtered = transactions.filter(
     (d) =>
       d.transactionId?.toLowerCase().includes(search.toLowerCase()) ||
-      d.pdsCenterId?.toLowerCase().includes(search.toLowerCase())
+      d.pdsCenterId?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Distribution Receipts & Transaction History</h1>
-          <p className="text-xs text-muted-foreground">View biometrically validated ration collection logs and IPFS receipt anchors</p>
+          <h1 className="text-xl font-bold text-foreground">
+            Distribution Receipts & Transaction History
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            View biometrically validated ration collection logs and IPFS receipt
+            anchors
+          </p>
         </div>
 
         {transactions.length > 0 && (
@@ -75,9 +90,14 @@ export default function BeneficiaryTransactionsPage() {
             <PackageOpen className="size-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">No Distribution History</h3>
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
+              No Distribution History
+            </h3>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              No ration distributions have been recorded for this beneficiary card yet. When you collect commodity rations from your assigned Fair Price Shop, authenticated distribution receipts will appear here.
+              No ration distributions have been recorded for this beneficiary
+              card yet. When you collect commodity rations from your assigned
+              Fair Price Shop, authenticated distribution receipts will appear
+              here.
             </p>
           </div>
         </div>
@@ -99,13 +119,23 @@ export default function BeneficiaryTransactionsPage() {
             <tbody className="divide-y divide-border/60">
               {filtered.map((d) => (
                 <tr key={d.id} className="hover:bg-muted/40 transition-colors">
-                  <td className="px-4 py-3 font-mono font-bold text-primary">{d.transactionId}</td>
-                  <td className="px-4 py-3 text-foreground">{new Date(d.timestamp).toLocaleString()}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{d.pdsCenterId}</td>
-                  <td className="px-4 py-3 text-foreground">
-                    {d.commodities?.map((c) => `${c.quantity}${c.unit} ${c.name}`).join(', ')}
+                  <td className="px-4 py-3 font-mono font-bold text-primary">
+                    {d.transactionId}
                   </td>
-                  <td className="px-4 py-3 font-mono font-bold text-primary">₹{d.totalAmount}</td>
+                  <td className="px-4 py-3 text-foreground">
+                    {new Date(d.timestamp).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {d.pdsCenterId}
+                  </td>
+                  <td className="px-4 py-3 text-foreground">
+                    {d.commodities
+                      ?.map((c) => `${c.quantity}${c.unit} ${c.name}`)
+                      .join(", ")}
+                  </td>
+                  <td className="px-4 py-3 font-mono font-bold text-primary">
+                    ₹{d.totalAmount}
+                  </td>
                   <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1 text-primary">
                       <ShieldCheck className="size-3.5" /> Biometric Verified
@@ -131,7 +161,9 @@ export default function BeneficiaryTransactionsPage() {
         <div className="responsive-modal-overlay">
           <div className="responsive-modal-panel responsive-modal-panel-sm">
             <div className="responsive-modal-header flex items-center justify-between gap-3">
-              <h3 className="min-w-0 font-bold text-base">Cryptographic Receipt Proof</h3>
+              <h3 className="min-w-0 font-bold text-base">
+                Cryptographic Receipt Proof
+              </h3>
               <button
                 type="button"
                 onClick={() => setSelectedTxn(null)}
@@ -144,11 +176,36 @@ export default function BeneficiaryTransactionsPage() {
 
             <div className="responsive-modal-body space-y-2 text-xs">
               <div className="p-3 bg-muted/40 rounded-md border border-border space-y-1">
-                <p className="text-muted-foreground">Transaction ID: <span className="font-mono text-primary font-bold technical-value-wrap">{selectedTxn.transactionId}</span></p>
-                <p className="text-muted-foreground">Beneficiary Name: <span className="font-semibold text-foreground">{selectedTxn.beneficiaryName}</span></p>
-                <p className="text-muted-foreground">Ration Card ID: <span className="font-mono text-foreground technical-value-wrap">{selectedTxn.rationCardId}</span></p>
-                <p className="text-muted-foreground">State Hash: <span className="font-mono text-primary technical-value-wrap">{selectedTxn.receiptHash}</span></p>
-                <p className="text-muted-foreground">IPFS CID: <span className="font-mono text-foreground technical-value-wrap">{selectedTxn.ipfsCid}</span></p>
+                <p className="text-muted-foreground">
+                  Transaction ID:{" "}
+                  <span className="font-mono text-primary font-bold technical-value-wrap">
+                    {selectedTxn.transactionId}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  Beneficiary Name:{" "}
+                  <span className="font-semibold text-foreground">
+                    {selectedTxn.beneficiaryName}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  Ration Card ID:{" "}
+                  <span className="font-mono text-foreground technical-value-wrap">
+                    {selectedTxn.rationCardId}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  State Hash:{" "}
+                  <span className="font-mono text-primary technical-value-wrap">
+                    {selectedTxn.receiptHash}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  IPFS CID:{" "}
+                  <span className="font-mono text-foreground technical-value-wrap">
+                    {selectedTxn.ipfsCid}
+                  </span>
+                </p>
               </div>
             </div>
 

@@ -1,11 +1,18 @@
-import crypto from 'crypto';
-import { CanonicalizationService } from './canonicalization.service';
-import { HashingService } from './hashing.service';
+import crypto from "crypto";
+import { CanonicalizationService } from "./canonicalization.service";
+import { HashingService } from "./hashing.service";
 
 export interface IntegrityManifest {
   recordId: string;
-  entityType: 'BENEFICIARY' | 'DISTRIBUTION' | 'AUDIT_EVENT' | 'SECURITY_LOG' | 'SOC_EVENT' | 'COMMODITY_RELEASE' | string;
-  hashAlgorithm: 'SHA-256' | 'SHA-512';
+  entityType:
+    | "BENEFICIARY"
+    | "DISTRIBUTION"
+    | "AUDIT_EVENT"
+    | "SECURITY_LOG"
+    | "SOC_EVENT"
+    | "COMMODITY_RELEASE"
+    | string;
+  hashAlgorithm: "SHA-256" | "SHA-512";
   integrityHash: string;
   timestamp: string;
   metadataVersion: string;
@@ -18,17 +25,21 @@ export interface IPFSUploadResult {
   manifest: IntegrityManifest;
   sizeBytes: number;
   storedAt: string;
-  storageProvider: 'IPFS_LOCAL_PINNING' | 'IPFS_CLUSTER_GATEWAY';
+  storageProvider: "IPFS_LOCAL_PINNING" | "IPFS_CLUSTER_GATEWAY";
 }
 
 // In-memory decentralized pinned manifest registry for resilience across server lifecycles
 declare global {
   // eslint-disable-next-line no-var
-  var _ipfsManifestStore: Map<string, { manifest: IntegrityManifest; raw: string }> | undefined;
+  var _ipfsManifestStore:
+    Map<string, { manifest: IntegrityManifest; raw: string }> | undefined;
 }
 
 export class IPFSService {
-  private static getStore(): Map<string, { manifest: IntegrityManifest; raw: string }> {
+  private static getStore(): Map<
+    string,
+    { manifest: IntegrityManifest; raw: string }
+  > {
     if (!global._ipfsManifestStore) {
       global._ipfsManifestStore = new Map();
     }
@@ -40,18 +51,20 @@ export class IPFSService {
    * Standard IPFS CID format: Qm[44 chars base58] from sha256 multihash (0x12 0x20 + 32-byte digest).
    */
   static computeCID(content: string | Buffer): string {
-    const rawBuffer = typeof content === 'string' ? Buffer.from(content, 'utf8') : content;
-    const sha256Hash = crypto.createHash('sha256').update(rawBuffer).digest();
-    
+    const rawBuffer =
+      typeof content === "string" ? Buffer.from(content, "utf8") : content;
+    const sha256Hash = crypto.createHash("sha256").update(rawBuffer).digest();
+
     // IPFS Multihash header: 0x12 (SHA-256 algorithm code), 0x20 (32 bytes length)
     const multihash = Buffer.concat([Buffer.from([0x12, 0x20]), sha256Hash]);
-    
+
     // Custom base58 encoder for standard IPFS Qm CID representation
-    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    let num = BigInt('0x' + multihash.toString('hex'));
+    const ALPHABET =
+      "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    let num = BigInt("0x" + multihash.toString("hex"));
     const zero = BigInt(0);
     const radix = BigInt(58);
-    let encoded = '';
+    let encoded = "";
     while (num > zero) {
       const remainder = Number(num % radix);
       num = num / radix;
@@ -59,10 +72,10 @@ export class IPFSService {
     }
     // Pad with leading '1's for leading zeros
     for (let i = 0; i < multihash.length && multihash[i] === 0; i++) {
-      encoded = '1' + encoded;
+      encoded = "1" + encoded;
     }
 
-    return encoded.startsWith('Qm') ? encoded : `Qm${encoded.slice(0, 44)}`;
+    return encoded.startsWith("Qm") ? encoded : `Qm${encoded.slice(0, 44)}`;
   }
 
   /**
@@ -72,7 +85,7 @@ export class IPFSService {
   static async uploadManifest(params: {
     recordId: string;
     entityType: string;
-    hashAlgorithm: 'SHA-256' | 'SHA-512';
+    hashAlgorithm: "SHA-256" | "SHA-512";
     integrityHash: string;
     encryptedRef?: string;
   }): Promise<IPFSUploadResult> {
@@ -83,7 +96,7 @@ export class IPFSService {
       hashAlgorithm: params.hashAlgorithm,
       integrityHash: params.integrityHash,
       timestamp,
-      metadataVersion: '2.0.0-pdsw-secure',
+      metadataVersion: "2.0.0-pdsw-secure",
       encryptedRef: params.encryptedRef,
     };
 
@@ -99,9 +112,9 @@ export class IPFSService {
       try {
         // Asynchronous background pinning to external IPFS cluster
         fetch(`${process.env.IPFS_API_URL}/api/v0/add`, {
-          method: 'POST',
+          method: "POST",
           body: canonicalJson,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { "Content-Type": "application/json" },
         }).catch(() => {});
       } catch {}
     }
@@ -109,9 +122,9 @@ export class IPFSService {
     return {
       cid,
       manifest,
-      sizeBytes: Buffer.byteLength(canonicalJson, 'utf8'),
+      sizeBytes: Buffer.byteLength(canonicalJson, "utf8"),
       storedAt: timestamp,
-      storageProvider: 'IPFS_LOCAL_PINNING',
+      storageProvider: "IPFS_LOCAL_PINNING",
     };
   }
 
@@ -119,7 +132,7 @@ export class IPFSService {
    * Retrieves an integrity manifest from IPFS by its Content Identifier (CID).
    */
   static async getByCID(cid: string): Promise<IntegrityManifest | null> {
-    if (!cid || typeof cid !== 'string') return null;
+    if (!cid || typeof cid !== "string") return null;
 
     const store = this.getStore();
     const entry = store.get(cid);

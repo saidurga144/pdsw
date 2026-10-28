@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
-import { useUIStore } from '@/stores/ui.store';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { clsx } from 'clsx';
-import { normalizeRole } from '@/lib/role-utils';
+import React from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth.store";
+import { useUIStore } from "@/stores/ui.store";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { clsx } from "clsx";
+import { normalizeRole } from "@/lib/role-utils";
 import {
   LayoutDashboard,
   UserCheck,
@@ -29,7 +29,7 @@ import {
   Activity,
   ShieldAlert,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 
 export const Sidebar: React.FC = () => {
   const router = useRouter();
@@ -40,55 +40,117 @@ export const Sidebar: React.FC = () => {
   if (!sidebarOpen) return null;
 
   const beneficiaryRoutes = [
-    { href: '/beneficiary/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { href: '/beneficiary/profile', label: 'My Profile', icon: UserCheck },
-    { href: '/beneficiary/family', label: 'Family Management', icon: Users },
-    { href: '/beneficiary/eligibility', label: 'Ration Eligibility', icon: FileCheck },
-    { href: '/beneficiary/requests', label: 'Change Requests', icon: Send },
-    { href: '/beneficiary/transactions', label: 'Distribution Receipts', icon: History },
-    { href: '/beneficiary/integrity', label: 'Record Integrity (Citizen)', icon: ShieldCheck },
-    { href: '/beneficiary/settings', label: 'Account Settings', icon: Settings },
+    {
+      href: "/beneficiary/dashboard",
+      label: "My Dashboard",
+      icon: LayoutDashboard,
+    },
+    { href: "/beneficiary/profile", label: "My Profile", icon: UserCheck },
+    { href: "/beneficiary/family", label: "Family Management", icon: Users },
+    {
+      href: "/beneficiary/eligibility",
+      label: "Ration Eligibility",
+      icon: FileCheck,
+    },
+    { href: "/beneficiary/requests", label: "Change Requests", icon: Send },
+    {
+      href: "/beneficiary/transactions",
+      label: "Distribution Receipts",
+      icon: History,
+    },
+    {
+      href: "/beneficiary/integrity",
+      label: "Record Integrity (Citizen)",
+      icon: ShieldCheck,
+    },
+    {
+      href: "/beneficiary/settings",
+      label: "Account Settings",
+      icon: Settings,
+    },
   ];
 
   const officerRoutes = [
-    { href: '/officer/dashboard', label: 'Officer Dashboard', icon: LayoutDashboard },
-    { href: '/officer/beneficiaries', label: 'Beneficiary Management', icon: Users },
-    { href: '/officer/verification', label: 'Verification Queue', icon: FileCheck },
-    { href: '/officer/requests', label: 'Modification Requests', icon: Send },
-    { href: '/officer/distribution', label: 'Commodity Release', icon: Building2 },
-    { href: '/officer/migration', label: 'Migration & Transfers', icon: Activity },
-    { href: '/officer/alerts', label: 'Field Risk Alerts', icon: AlertTriangle },
+    {
+      href: "/officer/dashboard",
+      label: "Officer Dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      href: "/officer/beneficiaries",
+      label: "Beneficiary Management",
+      icon: Users,
+    },
+    {
+      href: "/officer/verification",
+      label: "Verification Queue",
+      icon: FileCheck,
+    },
+    { href: "/officer/requests", label: "Modification Requests", icon: Send },
+    {
+      href: "/officer/distribution",
+      label: "Commodity Release",
+      icon: Building2,
+    },
+    {
+      href: "/officer/migration",
+      label: "Migration & Transfers",
+      icon: Activity,
+    },
+    {
+      href: "/officer/alerts",
+      label: "Field Risk Alerts",
+      icon: AlertTriangle,
+    },
   ];
 
   const adminRoutes = [
-    { href: '/admin/dashboard', label: 'System Dashboard', icon: LayoutDashboard },
-    { href: '/admin/users', label: 'User Directory', icon: Users },
-    { href: '/admin/roles', label: 'RBAC & Permissions', icon: Lock },
-    { href: '/admin/ai-intelligence', label: 'AI Risk Intelligence', icon: Cpu },
-    { href: '/admin/integrity', label: 'Integrity Verification', icon: ShieldCheck },
-    { href: '/admin/ipfs', label: 'IPFS Provenance Ledger', icon: Database },
-    { href: '/admin/reports', label: 'System Analytics', icon: FileSpreadsheet },
-    { href: '/admin/settings', label: 'System Settings', icon: Settings },
+    {
+      href: "/admin/dashboard",
+      label: "System Dashboard",
+      icon: LayoutDashboard,
+    },
+    { href: "/admin/users", label: "User Directory", icon: Users },
+    { href: "/admin/roles", label: "RBAC & Permissions", icon: Lock },
+    {
+      href: "/admin/ai-intelligence",
+      label: "AI Risk Intelligence",
+      icon: Cpu,
+    },
+    {
+      href: "/admin/integrity",
+      label: "Integrity Verification",
+      icon: ShieldCheck,
+    },
+    { href: "/admin/ipfs", label: "IPFS Provenance Ledger", icon: Database },
+    {
+      href: "/admin/reports",
+      label: "System Analytics",
+      icon: FileSpreadsheet,
+    },
+    { href: "/admin/settings", label: "System Settings", icon: Settings },
   ];
-
-
 
   const socRoutes = [
-    { href: '/soc/dashboard', label: 'SOC Cyber Dashboard', icon: LayoutDashboard },
-    { href: '/soc/events', label: 'Security Event Logs', icon: ShieldAlert },
-    { href: '/soc/incidents', label: 'Cyber Incidents', icon: AlertTriangle },
-    { href: '/soc/cyber-ai', label: 'Cyber Anomaly Analytics', icon: Cpu },
+    {
+      href: "/soc/dashboard",
+      label: "SOC Cyber Dashboard",
+      icon: LayoutDashboard,
+    },
+    { href: "/soc/events", label: "Security Event Logs", icon: ShieldAlert },
+    { href: "/soc/incidents", label: "Cyber Incidents", icon: AlertTriangle },
+    { href: "/soc/cyber-ai", label: "Cyber Anomaly Analytics", icon: Cpu },
   ];
 
-  const canonicalRole = normalizeRole(role || '');
+  const canonicalRole = normalizeRole(role || "");
   let currentRoutes = beneficiaryRoutes;
-  if (canonicalRole === 'PDS_OFFICER') currentRoutes = officerRoutes;
-  if (canonicalRole === 'ADMIN') currentRoutes = adminRoutes;
-  if (canonicalRole === 'SOC_ANALYST') currentRoutes = socRoutes;
+  if (canonicalRole === "PDS_OFFICER") currentRoutes = officerRoutes;
+  if (canonicalRole === "ADMIN") currentRoutes = adminRoutes;
+  if (canonicalRole === "SOC_ANALYST") currentRoutes = socRoutes;
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/');
+    router.replace("/");
   };
 
   return (
@@ -114,20 +176,27 @@ export const Sidebar: React.FC = () => {
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto text-xs">
             {currentRoutes.map((route) => {
               const Icon = route.icon;
-              const isActive = pathname === route.href || pathname.startsWith(route.href + '/');
+              const isActive =
+                pathname === route.href ||
+                pathname.startsWith(route.href + "/");
               return (
                 <Link
                   key={route.href}
                   href={route.href}
                   onClick={() => setSidebarOpen(false)}
                   className={clsx(
-                    'flex items-center gap-2.5 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors',
+                    "flex items-center gap-2.5 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors",
                     isActive
-                      ? 'border-primary bg-primary/10 font-semibold text-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                      ? "border-primary bg-primary/10 font-semibold text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
                   )}
                 >
-                  <Icon className={clsx('w-4 h-4', isActive ? 'text-primary' : 'text-muted-foreground')} />
+                  <Icon
+                    className={clsx(
+                      "w-4 h-4",
+                      isActive ? "text-primary" : "text-muted-foreground",
+                    )}
+                  />
                   <span className="sidebar-display">{route.label}</span>
                 </Link>
               );
@@ -153,19 +222,25 @@ export const Sidebar: React.FC = () => {
           </div>
           {currentRoutes.map((route) => {
             const Icon = route.icon;
-            const isActive = pathname === route.href || pathname.startsWith(route.href + '/');
+            const isActive =
+              pathname === route.href || pathname.startsWith(route.href + "/");
             return (
               <Link
                 key={route.href}
                 href={route.href}
                 className={clsx(
-                  'flex items-center gap-2.5 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors',
+                  "flex items-center gap-2.5 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? 'border-primary bg-primary/10 font-semibold text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                    ? "border-primary bg-primary/10 font-semibold text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
                 )}
               >
-                <Icon className={clsx('w-4 h-4', isActive ? 'text-primary' : 'text-muted-foreground')} />
+                <Icon
+                  className={clsx(
+                    "w-4 h-4",
+                    isActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                />
                 <span className="sidebar-display">{route.label}</span>
               </Link>
             );

@@ -1,17 +1,19 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
-import { PublicNavbar } from '@/components/landing/PublicNavbar';
-import { PublicFooter } from '@/components/landing/PublicFooter';
-import { HeaderNavbar } from '@/components/shared/HeaderNavbar';
-import { Sidebar } from '@/components/shared/Sidebar';
-import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
-import { GlobalCommandSearch } from '@/components/shared/GlobalCommandSearch';
-import { Shield } from 'lucide-react';
+import React, { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth.store";
+import { PublicNavbar } from "@/components/landing/PublicNavbar";
+import { PublicFooter } from "@/components/landing/PublicFooter";
+import { HeaderNavbar } from "@/components/shared/HeaderNavbar";
+import { Sidebar } from "@/components/shared/Sidebar";
+import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
+import { GlobalCommandSearch } from "@/components/shared/GlobalCommandSearch";
+import { Shield } from "lucide-react";
 
-export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppShell: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isInitialized, initAuth, role } = useAuthStore();
@@ -25,35 +27,42 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Determine if current route requires authentication
   const isDashboardRoute =
-    pathname.startsWith('/beneficiary') ||
-    pathname.startsWith('/officer') ||
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/auditor') ||
-    pathname.startsWith('/soc');
+    pathname.startsWith("/beneficiary") ||
+    pathname.startsWith("/officer") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/auditor") ||
+    pathname.startsWith("/soc");
 
   // Route guard: redirect unauthenticated users away from dashboard routes
   useEffect(() => {
     if (!isInitialized) return; // Wait for auth hydration
 
     if (isDashboardRoute && !isAuthenticated) {
-      router.replace('/login');
+      router.replace("/login");
       return;
     }
 
     // RBAC: ensure user can only access their own role's routes
     if (isDashboardRoute && isAuthenticated) {
       const roleRouteMap: Record<string, string> = {
-        BENEFICIARY: '/beneficiary',
-        OFFICER: '/officer',
-        ADMIN: '/admin',
-        SOC: '/soc',
+        BENEFICIARY: "/beneficiary",
+        OFFICER: "/officer",
+        ADMIN: "/admin",
+        SOC: "/soc",
       };
       const expectedPrefix = roleRouteMap[role];
       if (expectedPrefix && !pathname.startsWith(expectedPrefix)) {
-        router.replace('/unauthorized');
+        router.replace("/unauthorized");
       }
     }
-  }, [isInitialized, isAuthenticated, isDashboardRoute, pathname, role, router]);
+  }, [
+    isInitialized,
+    isAuthenticated,
+    isDashboardRoute,
+    pathname,
+    role,
+    router,
+  ]);
 
   // Public pages: landing, login, about, etc. - render immediately without blocking on auth hydration
   if (!isDashboardRoute) {
@@ -82,8 +91,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             />
           </div>
           <div className="text-center space-y-1">
-            <p className="text-sm font-bold text-foreground tracking-wide">PDSW Platform</p>
-            <p className="text-xs text-muted-foreground font-mono">Verifying session credentials...</p>
+            <p className="text-sm font-bold text-foreground tracking-wide">
+              PDSW Platform
+            </p>
+            <p className="text-xs text-muted-foreground font-mono">
+              Verifying session credentials...
+            </p>
           </div>
         </div>
       </div>

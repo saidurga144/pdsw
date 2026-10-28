@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { ShieldCheck, Cpu, Database, Activity } from 'lucide-react';
+import React from "react";
+import { ShieldCheck, Cpu, Database, Activity } from "lucide-react";
 
 export const SecurityStatus: React.FC = () => {
   return (
@@ -22,7 +22,9 @@ export const SecurityStatus: React.FC = () => {
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Cpu className="size-3 text-primary" /> AI Anomaly Engine
           </span>
-          <span className="text-foreground font-semibold">MONITORING ACTIVE</span>
+          <span className="text-foreground font-semibold">
+            MONITORING ACTIVE
+          </span>
         </div>
 
         <div className="flex items-center justify-between gap-4">
@@ -36,7 +38,9 @@ export const SecurityStatus: React.FC = () => {
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Database className="size-3 text-primary" /> IPFS Provenance DAG
           </span>
-          <span className="text-foreground font-semibold">PINNED & ANCHORED</span>
+          <span className="text-foreground font-semibold">
+            PINNED & ANCHORED
+          </span>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
-import { AuditService } from '@/server/services/audit.service';
-import { Role, User } from '@/types';
-import { MOCK_USERS } from '@/mock-data/pds-data';
+import { AuditService } from "@/server/services/audit.service";
+import { Role, User } from "@/types";
+import { MOCK_USERS } from "@/mock-data/pds-data";
 
 // In-memory runtime users registry
 let runtimeUsers: any[] = [...MOCK_USERS];
@@ -25,7 +25,7 @@ export class ServerAdminService {
       jurisdiction?: string;
     },
     adminId: string,
-    ipAddress?: string
+    ipAddress?: string,
   ) {
     const id = `usr-${userData.role.toLowerCase()}-${Date.now()}`;
     const now = new Date().toISOString();
@@ -36,9 +36,9 @@ export class ServerAdminService {
       role: userData.role,
       fullName: userData.fullName,
       full_name: userData.fullName,
-      phone: userData.phone || '+91 98000 00000',
-      jurisdiction: userData.jurisdiction || 'All Districts',
-      status: 'ACTIVE',
+      phone: userData.phone || "+91 98000 00000",
+      jurisdiction: userData.jurisdiction || "All Districts",
+      status: "ACTIVE",
       created_at: now,
       updated_at: now,
     };
@@ -47,22 +47,37 @@ export class ServerAdminService {
 
     await AuditService.recordEvent({
       actorId: adminId,
-      actorRole: 'ADMIN',
-      action: 'CREATE_USER',
-      resource: 'USER',
+      actorRole: "ADMIN",
+      action: "CREATE_USER",
+      resource: "USER",
       resourceId: id,
-      newState: { email: userData.email, role: userData.role, fullName: userData.fullName },
+      newState: {
+        email: userData.email,
+        role: userData.role,
+        fullName: userData.fullName,
+      },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
-    return { id, email: userData.email, role: userData.role, fullName: userData.fullName, status: 'ACTIVE' };
+    return {
+      id,
+      email: userData.email,
+      role: userData.role,
+      fullName: userData.fullName,
+      status: "ACTIVE",
+    };
   }
 
   /**
    * Updates user operational status (ACTIVE / SUSPENDED / DEACTIVATED)
    */
-  static async updateUserStatus(userId: string, status: string, adminId: string, ipAddress?: string) {
+  static async updateUserStatus(
+    userId: string,
+    status: string,
+    adminId: string,
+    ipAddress?: string,
+  ) {
     const userIndex = runtimeUsers.findIndex((u) => u.id === userId);
     if (userIndex !== -1) {
       runtimeUsers[userIndex] = {
@@ -74,13 +89,13 @@ export class ServerAdminService {
 
     await AuditService.recordEvent({
       actorId: adminId,
-      actorRole: 'ADMIN',
-      action: 'UPDATE_USER_STATUS',
-      resource: 'USER',
+      actorRole: "ADMIN",
+      action: "UPDATE_USER_STATUS",
+      resource: "USER",
       resourceId: userId,
       newState: { status },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return { success: true, message: `User status set to ${status}.` };

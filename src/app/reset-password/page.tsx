@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState } from "react";
+import Link from "next/link";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function ResetPasswordPage() {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,7 +24,9 @@ export default function ResetPasswordPage() {
         {!submitted ? (
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="text-foreground font-semibold block mb-1.5">New Security Password</label>
+              <label className="text-foreground font-semibold block mb-1.5">
+                New Security Password
+              </label>
               <input
                 type="password"
                 required
@@ -35,7 +37,9 @@ export default function ResetPasswordPage() {
               />
             </div>
             <div>
-              <label className="text-foreground font-semibold block mb-1.5">Confirm New Password</label>
+              <label className="text-foreground font-semibold block mb-1.5">
+                Confirm New Password
+              </label>
               <input
                 type="password"
                 required
@@ -58,8 +62,12 @@ export default function ResetPasswordPage() {
             <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-secondary text-primary border border-border">
               <CheckCircle2 className="size-6" />
             </div>
-            <h3 className="text-base font-bold text-foreground">Password Updated Successfully</h3>
-            <p className="text-muted-foreground text-[11px]">Your account credentials have been cryptographically updated.</p>
+            <h3 className="text-base font-bold text-foreground">
+              Password Updated Successfully
+            </h3>
+            <p className="text-muted-foreground text-[11px]">
+              Your account credentials have been cryptographically updated.
+            </p>
             <Link
               href="/login"
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-md bg-primary text-white font-bold uppercase tracking-wider text-xs"

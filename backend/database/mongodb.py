@@ -1,46 +1,29 @@
-"""
-backend/database/mongodb.py
-----------------------------
-MongoDB connection module for PDSW.
-
-Loads MONGODB_URI and MONGODB_DATABASE from backend/.env.
-Exposes a reusable MongoClient, database instance, and users collection.
-
-SECURITY NOTE:
-  - MONGODB_URI is NEVER exposed to the frontend or browser.
-  - Credentials are NEVER hardcoded in source code.
-  - Loaded exclusively from the backend .env file at startup.
-"""
+"""MongoDB connection module for PDSW."""
 
 import logging
+import os
 from pathlib import Path
+import string
 from typing import Optional
 from urllib.parse import quote_plus
-import string
 
 from dotenv import load_dotenv
-import os
-from pymongo import MongoClient, ASCENDING
+from pymongo import ASCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import ConnectionFailure, InvalidURI, OperationFailure, PyMongoError
 
-# Always resolve .env from the backend directory (same directory as this package's parent).
-_BACKEND_DIR = Path(__file__).parent.parent  # backend/
+_BACKEND_DIR = Path(__file__).parent.parent
 _ENV_FILE = _BACKEND_DIR / ".env"
 load_dotenv(dotenv_path=_ENV_FILE, override=False)
 
 logger = logging.getLogger("pdsw.mongodb")
 
-# ---------------------------------------------------------------------------
-# Module-level singletons – initialised once at startup by `init_mongodb()`
-# ---------------------------------------------------------------------------
 _mongo_client: Optional[MongoClient] = None
 _mongo_db: Optional[Database] = None
 
 
 def _quote_mongodb_credential(value: str) -> str:
-    """Percent-encode a MongoDB username/password without double-encoding %XX."""
     encoded_parts: list[str] = []
     pending_chars: list[str] = []
     hex_digits = set(string.hexdigits)
@@ -73,12 +56,6 @@ def _quote_mongodb_credential(value: str) -> str:
 
 
 def _normalise_mongodb_uri(mongo_uri: str) -> str:
-    """
-    Encode raw username/password characters that PyMongo rejects in MongoDB URIs.
-
-    This keeps already-escaped credentials intact, so a valid URI remains unchanged
-    while common .env values like password@123 or pass:word are made RFC 3986-safe.
-    """
     if not mongo_uri.startswith(("mongodb://", "mongodb+srv://")):
         return mongo_uri
 
@@ -117,20 +94,6 @@ def _normalise_mongodb_uri(mongo_uri: str) -> str:
 
 
 def init_mongodb() -> None:
-    """
-    Initialise the MongoDB client and database at application startup.
-
-    Steps:
-    1. Read MONGODB_URI and MONGODB_DATABASE from environment / .env.
-    2. Create a MongoClient with a short server-selection timeout so a bad
-       URI fails fast rather than blocking the startup sequence.
-    3. Ping the server to verify the connection is live.
-    4. Select the target database and ensure the `users` collection has a
-       UNIQUE index on `email` (idempotent – safe to call repeatedly).
-
-    Raises:
-        RuntimeError: if MONGODB_URI is missing or the connection fails.
-    """
     global _mongo_client, _mongo_db
 
     mongo_uri = _normalise_mongodb_uri(os.getenv("MONGODB_URI", "").strip())
@@ -144,18 +107,12 @@ def init_mongodb() -> None:
 
     logger.info("Connecting to MongoDB …")
 
+    timeout_ms = int(os.getenv("MONGODB_TIMEOUT_MS", "3000"))
     try:
-        # serverSelectionTimeoutMS: fail fast if the URI is unreachable
-        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=10_000)
-
-        # Verify the connection with a lightweight ping
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=timeout_ms)
         client.admin.command("ping")
 
         db = client[mongo_db_name]
-
-        # Ensure the `users` collection has a UNIQUE index on `email`.
-        # `pymongo` makes this idempotent: calling it on an already-indexed
-        # collection is a no-op.
         db["users"].create_index(
             [("email", ASCENDING)],
             unique=True,
@@ -195,12 +152,6 @@ def init_mongodb() -> None:
 
 
 def get_mongo_db() -> Database:
-    """
-    Return the active MongoDB database instance.
-
-    Raises:
-        RuntimeError: if `init_mongodb()` has not been called yet.
-    """
     if _mongo_db is None:
         raise RuntimeError(
             "MongoDB is not initialised. "
@@ -210,17 +161,10 @@ def get_mongo_db() -> Database:
 
 
 def get_users_collection() -> Collection:
-    """
-    Return the `users` collection from the active MongoDB database.
-
-    Raises:
-        RuntimeError: if MongoDB has not been initialised.
-    """
     return get_mongo_db()["users"]
 
 
 def close_mongodb() -> None:
-    """Close the MongoDB client connection gracefully (called on shutdown)."""
     global _mongo_client, _mongo_db
     if _mongo_client is not None:
         _mongo_client.close()

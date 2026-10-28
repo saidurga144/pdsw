@@ -1,28 +1,28 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { Search, X, User } from 'lucide-react';
-import { useUIStore } from '@/stores/ui.store';
-import { MOCK_BENEFICIARIES } from '@/mock-data/pds-data';
-import Link from 'next/link';
+import React, { useEffect, useState } from "react";
+import { Search, X, User } from "lucide-react";
+import { useUIStore } from "@/stores/ui.store";
+import { MOCK_BENEFICIARIES } from "@/mock-data/pds-data";
+import Link from "next/link";
 
 export const GlobalCommandSearch: React.FC = () => {
   const { searchOpen, setSearchOpen } = useUIStore();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setSearchOpen(!searchOpen);
       }
-      if (e.key === 'Escape' && searchOpen) {
+      if (e.key === "Escape" && searchOpen) {
         setSearchOpen(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchOpen, setSearchOpen]);
 
   if (!searchOpen) return null;
@@ -34,7 +34,7 @@ export const GlobalCommandSearch: React.FC = () => {
         (b) =>
           b.fullName.toLowerCase().includes(trimmedQuery.toLowerCase()) ||
           b.id.toLowerCase().includes(trimmedQuery.toLowerCase()) ||
-          b.rationCardId.toLowerCase().includes(trimmedQuery.toLowerCase())
+          b.rationCardId.toLowerCase().includes(trimmedQuery.toLowerCase()),
       )
     : [];
 
@@ -53,7 +53,7 @@ export const GlobalCommandSearch: React.FC = () => {
           />
           <button
             onClick={() => {
-              setQuery('');
+              setQuery("");
               setSearchOpen(false);
             }}
             className="shrink-0 p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -67,16 +67,22 @@ export const GlobalCommandSearch: React.FC = () => {
           {!trimmedQuery ? (
             <div className="py-10 text-center space-y-2 text-muted-foreground">
               <Search className="size-6 mx-auto text-primary/60" />
-              <p className="text-xs font-semibold text-foreground">Search Beneficiaries & Citizens</p>
+              <p className="text-xs font-semibold text-foreground">
+                Search Beneficiaries & Citizens
+              </p>
               <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                Type a citizen name, Beneficiary ID, or Ration Card number above to look up records.
+                Type a citizen name, Beneficiary ID, or Ration Card number above
+                to look up records.
               </p>
             </div>
           ) : filteredBeneficiaries.length === 0 ? (
             <div className="py-10 text-center space-y-1 text-muted-foreground">
-              <p className="text-xs font-semibold text-foreground">No matching records found</p>
+              <p className="text-xs font-semibold text-foreground">
+                No matching records found
+              </p>
               <p className="text-[11px] text-muted-foreground">
-                No beneficiaries or citizens found matching &ldquo;{trimmedQuery}&rdquo;.
+                No beneficiaries or citizens found matching &ldquo;
+                {trimmedQuery}&rdquo;.
               </p>
             </div>
           ) : (
@@ -90,7 +96,7 @@ export const GlobalCommandSearch: React.FC = () => {
                     key={b.id}
                     href={`/officer/distribution?id=${b.id}`}
                     onClick={() => {
-                      setQuery('');
+                      setQuery("");
                       setSearchOpen(false);
                     }}
                     className="flex min-w-0 items-center justify-between gap-3 p-2.5 rounded-md hover:bg-muted/50 border border-transparent hover:border-border transition-colors text-xs"
@@ -100,7 +106,9 @@ export const GlobalCommandSearch: React.FC = () => {
                         <User className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-foreground">{b.fullName}</p>
+                        <p className="truncate font-semibold text-foreground">
+                          {b.fullName}
+                        </p>
                         <p className="truncate text-[11px] text-muted-foreground font-mono">
                           {b.id} • {b.rationCardId}
                         </p>
@@ -117,7 +125,13 @@ export const GlobalCommandSearch: React.FC = () => {
         </div>
 
         <div className="responsive-modal-footer flex flex-col gap-1 bg-background text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span>Tip: Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono">ESC</kbd> to close search</span>
+          <span>
+            Tip: Press{" "}
+            <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono">
+              ESC
+            </kbd>{" "}
+            to close search
+          </span>
           <span className="font-medium">Beneficiary Search Directory</span>
         </div>
       </div>

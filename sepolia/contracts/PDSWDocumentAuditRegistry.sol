@@ -7,7 +7,6 @@ pragma solidity ^0.8.20;
  * Stores document cryptographic SHA-256 hashes, IPFS CIDs, uploader identities, and roles.
  */
 contract PDSWDocumentAuditRegistry {
-    
     struct AuditRecord {
         string documentId;
         string ipfsCid;
@@ -18,16 +17,11 @@ contract PDSWDocumentAuditRegistry {
         bool exists;
     }
 
-    // Mapping from documentId to AuditRecord
     mapping(string => AuditRecord) private records;
-    
-    // Mapping from SHA-256 fileHash to documentId
     mapping(string => string) private hashToDocumentId;
 
-    // Track total registered documents
     uint256 public totalDocuments;
 
-    // Events
     event DocumentRegistered(
         string indexed documentId,
         string ipfsCid,
@@ -37,7 +31,6 @@ contract PDSWDocumentAuditRegistry {
         uint256 timestamp
     );
 
-    // Errors
     error DocumentAlreadyExists(string documentId);
     error InvalidEmptyParameter(string paramName);
     error DocumentNotFound(string documentId);

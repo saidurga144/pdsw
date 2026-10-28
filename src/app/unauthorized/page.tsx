@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { ShieldAlert, Home } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth.store';
+import React from "react";
+import Link from "next/link";
+import { ShieldAlert, Home } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function UnauthorizedPage() {
   const { role } = useAuthStore();
 
   const getDashboardLink = () => {
     switch (role) {
-      case 'BENEFICIARY':
-        return '/beneficiary/dashboard';
-      case 'OFFICER':
-        return '/officer/dashboard';
-      case 'ADMIN':
-        return '/admin/dashboard';
-      case 'SOC':
-        return '/auditor/dashboard';
-      case 'SOC':
-        return '/soc/dashboard';
+      case "BENEFICIARY":
+        return "/beneficiary/dashboard";
+      case "OFFICER":
+        return "/officer/dashboard";
+      case "ADMIN":
+        return "/admin/dashboard";
+      case "SOC":
+        return "/auditor/dashboard";
+      case "SOC":
+        return "/soc/dashboard";
       default:
-        return '/';
+        return "/";
     }
   };
 
@@ -36,9 +36,14 @@ export default function UnauthorizedPage() {
           <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-destructive bg-destructive-light px-2.5 py-0.5 rounded border border-destructive-border">
             HTTP 403 • RBAC VIOLATION
           </span>
-          <h1 className="text-2xl font-extrabold text-foreground">ACCESS DENIED</h1>
+          <h1 className="text-2xl font-extrabold text-foreground">
+            ACCESS DENIED
+          </h1>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            You do not have administrative authorization to access this portal with your current <span className="font-mono text-foreground font-bold">{role}</span> credentials.
+            You do not have administrative authorization to access this portal
+            with your current{" "}
+            <span className="font-mono text-foreground font-bold">{role}</span>{" "}
+            credentials.
           </p>
         </div>
 

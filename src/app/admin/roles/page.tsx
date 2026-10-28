@@ -1,18 +1,34 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { MOCK_ROLE_PERMISSIONS } from '@/mock-data/pds-data';
-import { Lock, Check, X, Shield } from 'lucide-react';
+import React from "react";
+import { MOCK_ROLE_PERMISSIONS } from "@/mock-data/pds-data";
+import { Lock, Check, X, Shield } from "lucide-react";
 
 export default function RolePermissionManagementPage() {
-  const roles = ['BENEFICIARY', 'OFFICER', 'ADMIN', 'SOC', 'SOC'] as const;
-  const modules = ['BENEFICIARY', 'FAMILY', 'ELIGIBILITY', 'DISTRIBUTION', 'USERS', 'ROLES', 'AI_RISK', 'INTEGRITY', 'SECURITY', 'AUDIT', 'SETTINGS'];
+  const roles = ["BENEFICIARY", "OFFICER", "ADMIN", "SOC", "SOC"] as const;
+  const modules = [
+    "BENEFICIARY",
+    "FAMILY",
+    "ELIGIBILITY",
+    "DISTRIBUTION",
+    "USERS",
+    "ROLES",
+    "AI_RISK",
+    "INTEGRITY",
+    "SECURITY",
+    "AUDIT",
+    "SETTINGS",
+  ];
 
   return (
     <div className="space-y-6">
       <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-xl font-bold text-slate-100">Role-Based Access Control (RBAC) Matrix</h1>
-        <p className="text-xs text-slate-400">Configure portal capabilities across government personas</p>
+        <h1 className="text-xl font-bold text-slate-100">
+          Role-Based Access Control (RBAC) Matrix
+        </h1>
+        <p className="text-xs text-slate-400">
+          Configure portal capabilities across government personas
+        </p>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
@@ -21,17 +37,25 @@ export default function RolePermissionManagementPage() {
             <tr>
               <th className="px-4 py-3">Module Feature</th>
               {roles.map((r) => (
-                <th key={r} className="px-4 py-3 text-center">{r}</th>
+                <th key={r} className="px-4 py-3 text-center">
+                  {r}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 font-sans">
             {modules.map((mod) => (
               <tr key={mod} className="hover:bg-slate-800/50 transition-colors">
-                <td className="px-4 py-3 font-semibold text-slate-200">{mod}</td>
+                <td className="px-4 py-3 font-semibold text-slate-200">
+                  {mod}
+                </td>
                 {roles.map((r) => {
-                  const rolePerm = MOCK_ROLE_PERMISSIONS.find((p) => p.role === r);
-                  const perm = rolePerm?.permissions.find((p) => p.module === mod);
+                  const rolePerm = MOCK_ROLE_PERMISSIONS.find(
+                    (p) => p.role === r,
+                  );
+                  const perm = rolePerm?.permissions.find(
+                    (p) => p.module === mod,
+                  );
                   const allowed = perm?.canView || false;
 
                   return (

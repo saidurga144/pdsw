@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { ArrowRight, CheckCircle2, AlertCircle, Loader2, KeyRound } from 'lucide-react';
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import {
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  KeyRound,
+} from "lucide-react";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const tokenFromUrl = searchParams.get('token') || '';
+  const tokenFromUrl = searchParams.get("token") || "";
 
   const [token, setToken] = useState(tokenFromUrl);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (tokenFromUrl) {
@@ -25,38 +31,38 @@ function ResetPasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!token.trim()) {
-      setError('A valid reset token is required.');
+      setError("A valid reset token is required.");
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match. Please verify.');
+      setError("Passwords do not match. Please verify.");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: token.trim(), new_password: password }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setSubmitted(true);
       } else {
-        setError(data.detail || data.error || 'Failed to update password.');
+        setError(data.detail || data.error || "Failed to update password.");
       }
     } catch (err: any) {
-      setError(err?.message || 'Network error updating password.');
+      setError(err?.message || "Network error updating password.");
     } finally {
       setLoading(false);
     }
@@ -75,7 +81,9 @@ function ResetPasswordForm() {
 
           {!tokenFromUrl && (
             <div>
-              <label className="text-foreground font-semibold block mb-1.5">Reset Token</label>
+              <label className="text-foreground font-semibold block mb-1.5">
+                Reset Token
+              </label>
               <input
                 type="text"
                 required
@@ -88,7 +96,9 @@ function ResetPasswordForm() {
           )}
 
           <div>
-            <label className="text-foreground font-semibold block mb-1.5">New Password (Min 6 Characters)</label>
+            <label className="text-foreground font-semibold block mb-1.5">
+              New Password (Min 6 Characters)
+            </label>
             <input
               type="password"
               required
@@ -100,7 +110,9 @@ function ResetPasswordForm() {
           </div>
 
           <div>
-            <label className="text-foreground font-semibold block mb-1.5">Confirm New Password</label>
+            <label className="text-foreground font-semibold block mb-1.5">
+              Confirm New Password
+            </label>
             <input
               type="password"
               required
@@ -131,8 +143,13 @@ function ResetPasswordForm() {
           <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-secondary text-primary border border-border">
             <CheckCircle2 className="size-6" />
           </div>
-          <h3 className="text-base font-bold text-foreground">Password Updated Successfully</h3>
-          <p className="text-muted-foreground text-[11px]">Your account credentials have been cryptographically updated in the database.</p>
+          <h3 className="text-base font-bold text-foreground">
+            Password Updated Successfully
+          </h3>
+          <p className="text-muted-foreground text-[11px]">
+            Your account credentials have been cryptographically updated in the
+            database.
+          </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-md bg-primary text-white font-bold uppercase tracking-wider text-xs shadow-subtle"
@@ -153,7 +170,13 @@ export default function ResetPasswordPage() {
         title="Set New Password"
         subtitle="Choose a secure password for your government or citizen account"
       >
-        <Suspense fallback={<div className="p-4 text-center text-xs text-muted-foreground">Loading reset form...</div>}>
+        <Suspense
+          fallback={
+            <div className="p-4 text-center text-xs text-muted-foreground">
+              Loading reset form...
+            </div>
+          }
+        >
           <ResetPasswordForm />
         </Suspense>
       </AuthLayout>

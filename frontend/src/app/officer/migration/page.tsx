@@ -1,14 +1,19 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Activity, ArrowRight, Building, CheckCircle2 } from 'lucide-react';
+import React from "react";
+import { Activity, ArrowRight, Building, CheckCircle2 } from "lucide-react";
 
 export default function MigrationTransferPage() {
   return (
     <div className="space-y-6">
       <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-xl font-bold text-slate-100">Inter-District Migration & FPS Center Transfer</h1>
-        <p className="text-xs text-slate-400">Process beneficiary location transfers with continuous state hash provenance</p>
+        <h1 className="text-xl font-bold text-slate-100">
+          Inter-District Migration & FPS Center Transfer
+        </h1>
+        <p className="text-xs text-slate-400">
+          Process beneficiary location transfers with continuous state hash
+          provenance
+        </p>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-6">

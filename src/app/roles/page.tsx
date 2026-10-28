@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { RoleEcosystem } from '@/components/landing/RoleEcosystem';
+import React from "react";
+import { RoleEcosystem } from "@/components/landing/RoleEcosystem";
 
 export default function RolesPage() {
   return (

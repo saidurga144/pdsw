@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 interface RateLimitRecord {
   count: number;
@@ -40,9 +40,17 @@ export class RateLimiter {
   /**
    * Checks whether an IP or identifier is currently blocked
    */
-  static isBlocked(identifier: string): { blocked: boolean; remainingSeconds?: number } {
+  static isBlocked(identifier: string): {
+    blocked: boolean;
+    remainingSeconds?: number;
+  } {
     // In local development, permit loopback testing unless explicitly testing block response
-    if (process.env.NODE_ENV === 'development' && (identifier === '127.0.0.1' || identifier === '::1' || identifier === 'localhost')) {
+    if (
+      process.env.NODE_ENV === "development" &&
+      (identifier === "127.0.0.1" ||
+        identifier === "::1" ||
+        identifier === "localhost")
+    ) {
       return { blocked: false };
     }
 
@@ -78,7 +86,11 @@ export class RateLimiter {
    */
   static checkRateLimit(
     identifier: string,
-    options: RateLimitOptions = { windowMs: 60000, maxRequests: 120, blockDurationMs: 900000 }
+    options: RateLimitOptions = {
+      windowMs: 60000,
+      maxRequests: 120,
+      blockDurationMs: 900000,
+    },
   ): {
     allowed: boolean;
     currentCount: number;
@@ -158,7 +170,7 @@ export class RateLimiter {
   static record404Anomaly(
     ip: string,
     threshold: number = 15,
-    blockDurationMs: number = 900000 // 15 mins
+    blockDurationMs: number = 900000, // 15 mins
   ): { shouldBlock: boolean; consecutive404s: number } {
     const store = this.getIpStore();
     const now = Date.now();
@@ -189,10 +201,19 @@ export class RateLimiter {
   /**
    * Manually blocks an IP for a given duration (used by automated WAF triggers)
    */
-  static blockIp(ip: string, durationMs: number = 900000, reason: string = 'WAF_TRIGGER'): void {
+  static blockIp(
+    ip: string,
+    durationMs: number = 900000,
+    reason: string = "WAF_TRIGGER",
+  ): void {
     const store = this.getIpStore();
     const now = Date.now();
-    const existing = store.get(ip) || { count: 0, firstRequestTime: now, lastRequestTime: now, consecutive404s: 0 };
+    const existing = store.get(ip) || {
+      count: 0,
+      firstRequestTime: now,
+      lastRequestTime: now,
+      consecutive404s: 0,
+    };
     existing.blockedUntil = now + durationMs;
     store.set(ip, existing);
   }

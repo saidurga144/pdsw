@@ -1,12 +1,11 @@
-
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 /**
  * Standard Production Security Headers configuration
  */
 export const SECURITY_HEADERS = {
   // Content Security Policy
-  'Content-Security-Policy': [
+  "Content-Security-Policy": [
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Allowed for Next.js hydration
     "style-src 'self' 'unsafe-inline'",
@@ -16,28 +15,29 @@ export const SECURITY_HEADERS = {
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-  ].join('; '),
+  ].join("; "),
 
   // Strict Transport Security (HSTS) - 2 years + include subdomains
-  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
 
   // Prevent MIME type sniffing
-  'X-Content-Type-Options': 'nosniff',
+  "X-Content-Type-Options": "nosniff",
 
   // Prevent clickjacking via iframes
-  'X-Frame-Options': 'DENY',
+  "X-Frame-Options": "DENY",
 
   // Referrer Policy: Send full URL for same-origin, domain-only for cross-origin HTTPS, none for HTTP
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  "Referrer-Policy": "strict-origin-when-cross-origin",
 
   // Permissions Policy: Restrict browser hardware capabilities
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
 
   // Cross-Origin policies
-  'Cross-Origin-Opener-Policy': 'same-origin',
-  'Cross-Origin-Resource-Policy': 'same-origin',
-  'X-DNS-Prefetch-Control': 'off',
-  'X-Permitted-Cross-Domain-Policies': 'none',
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-origin",
+  "X-DNS-Prefetch-Control": "off",
+  "X-Permitted-Cross-Domain-Policies": "none",
 };
 
 /**

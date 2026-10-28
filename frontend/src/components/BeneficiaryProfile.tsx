@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { useBeneficiaryStore } from '@/stores/beneficiary.store';
-import { useAuthStore } from '@/stores/auth.store'; // Assuming an auth store exists
-import { Spinner } from '@/components/ui/Spinner'; // Adjust import path if needed
-import { Alert } from '@/components/ui/Alert'; // Adjust import path if needed
+import React, { useEffect } from "react";
+import { useBeneficiaryStore } from "@/stores/beneficiary.store";
+import { useAuthStore } from "@/stores/auth.store"; // Assuming an auth store exists
+import { Spinner } from "@/components/ui/Spinner"; // Adjust import path if needed
+import { Alert } from "@/components/ui/Alert"; // Adjust import path if needed
 
 /**
  * BeneficiaryProfile component displays the authenticated beneficiary's profile.
@@ -42,16 +42,28 @@ export const BeneficiaryProfile: React.FC = () => {
   return (
     <div className="p-4 bg-white rounded shadow-lg">
       <h2 className="text-xl font-semibold mb-2">Beneficiary Profile</h2>
-      <p><strong>Name:</strong> {fullName}</p>
-      <p><strong>Phone:</strong> {phone}</p>
-      <p><strong>Address:</strong> {address.doorNo}, {address.street}, {address.district}, {address.state} - {address.pincode}</p>
+      <p>
+        <strong>Name:</strong> {fullName}
+      </p>
+      <p>
+        <strong>Phone:</strong> {phone}
+      </p>
+      <p>
+        <strong>Address:</strong> {address.doorNo}, {address.street},{" "}
+        {address.district}, {address.state} - {address.pincode}
+      </p>
       <h3 className="mt-4 text-lg font-medium">Eligibility</h3>
-      <p><strong>Status:</strong> {eligibility.status}</p>
-      <p><strong>Monthly Income:</strong> ₹{eligibility.monthlyIncome}</p>
+      <p>
+        <strong>Status:</strong> {eligibility.status}
+      </p>
+      <p>
+        <strong>Monthly Income:</strong> ₹{eligibility.monthlyIncome}
+      </p>
       <ul className="mt-2 list-disc list-inside">
         {eligibility.monthlyEntitlements.map((ent) => (
           <li key={ent.commodity}>
-            {ent.commodity}: {ent.quantity} {ent.unit} @ ₹{ent.subsidizedPricePerUnit}/unit
+            {ent.commodity}: {ent.quantity} {ent.unit} @ ₹
+            {ent.subsidizedPricePerUnit}/unit
           </li>
         ))}
       </ul>

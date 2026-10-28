@@ -1,13 +1,15 @@
-import { create } from 'zustand';
-import { Notification } from '@/types';
-import { MOCK_NOTIFICATIONS } from '@/mock-data/pds-data';
+import { create } from "zustand";
+import { Notification } from "@/types";
+import { MOCK_NOTIFICATIONS } from "@/mock-data/pds-data";
 
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  addNotification: (
+    notification: Omit<Notification, "id" | "timestamp" | "read">,
+  ) => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
@@ -16,7 +18,9 @@ export const useNotificationStore = create<NotificationState>((set) => ({
 
   markAsRead: (id: string) => {
     set((state) => {
-      const updated = state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+      const updated = state.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n,
+      );
       return {
         notifications: updated,
         unreadCount: updated.filter((n) => !n.read).length,

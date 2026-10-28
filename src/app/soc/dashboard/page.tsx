@@ -1,17 +1,27 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAuthStore } from '@/stores/auth.store';
-import { StatsCard } from '@/components/dashboard/StatsCard';
-import { ShieldAlert, AlertTriangle, Lock, Cpu, Eye, Activity } from 'lucide-react';
-import Link from 'next/link';
+import React from "react";
+import { useAuthStore } from "@/stores/auth.store";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import {
+  ShieldAlert,
+  AlertTriangle,
+  Lock,
+  Cpu,
+  Eye,
+  Activity,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function SOCSecurityDashboard() {
   const { user } = useAuthStore();
 
-  const analystName = user?.name || 'Principal SOC Analyst';
-  const analystId = user?.id ? `SOC-${user.id.slice(-6).toUpperCase()}` : 'SOC-CERT-005';
-  const jurisdiction = user?.jurisdiction || 'National Cyber Response Centre (CERT-In)';
+  const analystName = user?.name || "Principal SOC Analyst";
+  const analystId = user?.id
+    ? `SOC-${user.id.slice(-6).toUpperCase()}`
+    : "SOC-CERT-005";
+  const jurisdiction =
+    user?.jurisdiction || "National Cyber Response Centre (CERT-In)";
 
   return (
     <div className="space-y-6">
@@ -21,9 +31,13 @@ export default function SOCSecurityDashboard() {
             <span className="bg-secondary text-primary font-mono text-[11px] px-2.5 py-0.5 rounded border border-border font-bold">
               {analystId}
             </span>
-            <span className="text-xs text-muted-foreground">{jurisdiction}</span>
+            <span className="text-xs text-muted-foreground">
+              {jurisdiction}
+            </span>
           </div>
-          <h1 className="text-xl font-bold text-foreground">{analystName} — SOC Cyber Security Dashboard</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            {analystName} — SOC Cyber Security Dashboard
+          </h1>
         </div>
 
         <Link
@@ -70,30 +84,40 @@ export default function SOCSecurityDashboard() {
         <div className="bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <h2 className="font-bold text-sm text-foreground flex items-center gap-2">
-              <ShieldAlert className="size-4 text-primary" /> Active Cyber Threat Incidents
+              <ShieldAlert className="size-4 text-primary" /> Active Cyber
+              Threat Incidents
             </h2>
-            <Link href="/soc/incidents" className="text-xs text-primary hover:underline font-semibold">
+            <Link
+              href="/soc/incidents"
+              className="text-xs text-primary hover:underline font-semibold"
+            >
               View All
             </Link>
           </div>
 
           <div className="p-4 text-center text-xs text-muted-foreground bg-muted/40 rounded-md border border-border">
-            No active critical incidents reported in the last 24 hours. Threat detection rules active.
+            No active critical incidents reported in the last 24 hours. Threat
+            detection rules active.
           </div>
         </div>
 
         <div className="bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <h2 className="font-bold text-sm text-foreground flex items-center gap-2">
-              <Activity className="size-4 text-primary" /> Real-time Security Ingestion Pipeline
+              <Activity className="size-4 text-primary" /> Real-time Security
+              Ingestion Pipeline
             </h2>
-            <Link href="/soc/events" className="text-xs text-primary hover:underline font-semibold">
+            <Link
+              href="/soc/events"
+              className="text-xs text-primary hover:underline font-semibold"
+            >
               Live Stream
             </Link>
           </div>
 
           <div className="p-4 text-center text-xs text-muted-foreground bg-muted/40 rounded-md border border-border">
-            MongoDB native security event stream connected. Automated brute-force and privilege escalation monitoring enabled.
+            MongoDB native security event stream connected. Automated
+            brute-force and privilege escalation monitoring enabled.
           </div>
         </div>
       </div>

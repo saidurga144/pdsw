@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { Beneficiary } from '@/types';
-import { BeneficiaryService } from '@/services/beneficiary.service';
-import { useAuthStore } from '@/stores/auth.store';
-import { Users, UserPlus, CheckCircle2, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import React, { useEffect, useState } from "react";
+import { Beneficiary } from "@/types";
+import { BeneficiaryService } from "@/services/beneficiary.service";
+import { useAuthStore } from "@/stores/auth.store";
+import { Users, UserPlus, CheckCircle2, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export default function FamilyManagementPage() {
   const { user } = useAuthStore();
@@ -22,7 +22,7 @@ export default function FamilyManagementPage() {
           setBeneficiary(data);
         }
       } catch (err) {
-        console.error('Error fetching family data:', err);
+        console.error("Error fetching family data:", err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -37,21 +37,23 @@ export default function FamilyManagementPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] space-y-3">
         <Loader2 className="size-8 text-primary animate-spin" />
-        <p className="text-xs text-muted-foreground font-mono">Loading enrolled family members...</p>
+        <p className="text-xs text-muted-foreground font-mono">
+          Loading enrolled family members...
+        </p>
       </div>
     );
   }
 
   const members = beneficiary?.familyMembers || [
     {
-      id: `fm-${user?.id || 'ben'}-1`,
-      beneficiaryId: user?.id || 'ben-1',
-      fullName: user?.name || 'Authenticated Citizen',
-      relationship: 'HEAD' as const,
+      id: `fm-${user?.id || "ben"}-1`,
+      beneficiaryId: user?.id || "ben-1",
+      fullName: user?.name || "Authenticated Citizen",
+      relationship: "HEAD" as const,
       age: 35,
-      gender: 'MALE' as const,
-      uidHash: `0x${user?.id?.slice(-8) || '00000000'}`,
-      verificationStatus: 'VERIFIED' as const,
+      gender: "MALE" as const,
+      uidHash: `0x${user?.id?.slice(-8) || "00000000"}`,
+      verificationStatus: "VERIFIED" as const,
       addedAt: new Date().toISOString(),
     },
   ];
@@ -60,8 +62,13 @@ export default function FamilyManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Family Members & Entitlements</h1>
-          <p className="text-xs text-muted-foreground">View enrolled family dependents and track member modification requests</p>
+          <h1 className="text-xl font-bold text-foreground">
+            Family Members & Entitlements
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            View enrolled family dependents and track member modification
+            requests
+          </p>
         </div>
 
         <Link
@@ -88,7 +95,9 @@ export default function FamilyManagementPage() {
             </div>
 
             <div>
-              <h3 className="font-bold text-sm text-foreground">{member.fullName}</h3>
+              <h3 className="font-bold text-sm text-foreground">
+                {member.fullName}
+              </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Age: {member.age} • Gender: {member.gender}
               </p>
@@ -96,7 +105,12 @@ export default function FamilyManagementPage() {
 
             <div className="bg-muted/40 p-2 rounded border border-border text-[11px] font-mono text-muted-foreground flex items-center justify-between gap-2 min-w-0">
               <span className="shrink-0">UID Hash:</span>
-              <span className="text-foreground font-semibold technical-value text-right" title={member.uidHash}>{member.uidHash}</span>
+              <span
+                className="text-foreground font-semibold technical-value text-right"
+                title={member.uidHash}
+              >
+                {member.uidHash}
+              </span>
             </div>
           </div>
         ))}

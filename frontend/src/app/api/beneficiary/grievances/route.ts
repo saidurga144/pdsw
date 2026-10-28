@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { withAuth, getClientIp } from '@/server/middleware/auth.middleware';
-import { ServerBeneficiaryService } from '@/server/services/beneficiary.service';
+import { NextResponse } from "next/server";
+import { withAuth, getClientIp } from "@/server/middleware/auth.middleware";
+import { ServerBeneficiaryService } from "@/server/services/beneficiary.service";
 
 export const POST = withAuth(
   async (req, { user }) => {
@@ -9,7 +9,7 @@ export const POST = withAuth(
     const { beneficiaryId, category, subject, description, priority } = body;
 
     const result = await ServerBeneficiaryService.submitGrievance({
-      beneficiaryId: beneficiaryId || 'ben-001',
+      beneficiaryId: beneficiaryId || "ben-001",
       category,
       subject,
       description,
@@ -21,5 +21,5 @@ export const POST = withAuth(
 
     return NextResponse.json(result);
   },
-  { requiredRoles: ['BENEFICIARY', 'PDS_OFFICER', 'ADMIN'] }
+  { requiredRoles: ["BENEFICIARY", "PDS_OFFICER", "ADMIN"] },
 );

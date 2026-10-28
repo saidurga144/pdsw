@@ -1,27 +1,16 @@
-"""
-backend/rbac/dependencies.py
-------------------------------
-FastAPI dependency functions for authentication and role-based access control.
-
-get_current_user_from_mongo:
-  - Validates the JWT Bearer token.
-  - Loads the user document from the configured auth store.
-  - MongoDB is primary; SQLite is used as a local fallback when MongoDB is down.
-
-require_roles:
-  - Checks the authenticated user's role against a list of allowed roles.
-
-NOTE: SQLite (get_db) is NOT used for user identity here.
-      SQLite remains only for AuthNonce and DocumentAudit records.
-"""
+"""FastAPI dependency functions for authentication and role-based access control."""
 
 from typing import List
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.auth.security import verify_jwt_token
+from backend.auth.user_store import (
+    find_user_by_email,
+    find_user_by_id,
+    find_user_by_wallet,
+)
 from backend.database import get_db
-from backend.auth.user_store import find_user_by_id, find_user_by_email, find_user_by_wallet
 from backend.rbac.roles import canonicalize_role
 
 security_scheme = HTTPBearer(auto_error=False)
@@ -31,16 +20,6 @@ async def get_current_user_from_mongo(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """
-    Extracts the authenticated user from the JWT Bearer token.
-
-    Returns the raw MongoDB user document (dict).
-    password_hash is present in the dict but must NEVER be forwarded to
-    a response model – use _doc_to_user_out() in auth.py for that.
-
-    Raises HTTP 401 if the token is missing, invalid, or the user is not found.
-    Raises HTTP 403 if the account is not ACTIVE.
-    """
     if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -67,7 +46,6 @@ async def get_current_user_from_mongo(
             detail="Invalid token payload identity.",
         )
 
-    # Load user from the configured auth store.
     try:
         user_doc = await find_user_by_id(db, user_id)
         if not user_doc and payload.get("email"):
@@ -76,7 +54,9 @@ async def get_current_user_from_mongo(
             user_doc = await find_user_by_wallet(db, payload.get("walletAddress"))
         if not user_doc and str(payload.get("role", "")).upper() == "ADMIN":
             from backend.config import settings
-            if settings.ADMIN_EMAIL:
+
+            token_email = (payload.get("email") or "").strip().lower()
+            if settings.ADMIN_EMAIL and token_email == settings.ADMIN_EMAIL.strip().lower():
                 user_doc = await find_user_by_email(db, settings.ADMIN_EMAIL)
     except Exception as exc:
         raise HTTPException(
@@ -99,20 +79,10 @@ async def get_current_user_from_mongo(
     return user_doc
 
 
-# ---------------------------------------------------------------------------
-# Legacy alias – kept so any existing code importing `get_current_user` still works
-# ---------------------------------------------------------------------------
 get_current_user = get_current_user_from_mongo
 
 
 def require_roles(allowed_roles: List[str]):
-    """
-    Enforces role-based authorisation for protected endpoints.
-
-    Usage:
-        @router.get("/admin-only", dependencies=[Depends(require_roles(["ADMIN"]))])
-    """
-    
     async def role_checker(
         user_doc: dict = Depends(get_current_user_from_mongo),
     ) -> dict:
@@ -123,7 +93,7 @@ def require_roles(allowed_roles: List[str]):
             raw_role = str(role_val or "")
         canonical_role = canonicalize_role(raw_role)
         allowed_canonical = [canonicalize_role(r) for r in allowed_roles]
-        if canonical_role not in allowed_canonical:
+        if canonical_role is None or canonical_role not in allowed_canonical:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(

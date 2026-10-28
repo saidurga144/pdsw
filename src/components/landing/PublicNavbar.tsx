@@ -1,41 +1,49 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/auth.store';
-import { Shield, Lock, ArrowRight, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
-import { clsx } from 'clsx';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth.store";
+import {
+  Shield,
+  Lock,
+  ArrowRight,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+import { clsx } from "clsx";
 
 // Sections on the landing page (/ route)
 const LANDING_SECTIONS = [
-  { id: 'platform', label: 'Platform' },
-  { id: 'how-it-works', label: 'How It Works' },
-  { id: 'pillars', label: 'Architecture' },
-  { id: 'roles', label: 'Roles' },
-  { id: 'about', label: 'About' },
+  { id: "platform", label: "Platform" },
+  { id: "how-it-works", label: "How It Works" },
+  { id: "pillars", label: "Architecture" },
+  { id: "roles", label: "Roles" },
+  { id: "about", label: "About" },
 ];
 
 // Standalone page nav links (non-landing routes)
 const PAGE_LINKS = [
-  { href: '/how-it-works', label: 'How It Works' },
-  { href: '/roles', label: 'Roles' },
-  { href: '/about', label: 'About' },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/roles", label: "Roles" },
+  { href: "/about", label: "About" },
 ];
 
 function getDashboardHref(role: string) {
   const map: Record<string, string> = {
-    BENEFICIARY: '/beneficiary/dashboard',
-    OFFICER: '/officer/dashboard',
-    ADMIN: '/admin/dashboard',
-    SOC: '/soc/dashboard',
+    BENEFICIARY: "/beneficiary/dashboard",
+    OFFICER: "/officer/dashboard",
+    ADMIN: "/admin/dashboard",
+    SOC: "/soc/dashboard",
   };
-  return map[role] || '/login';
+  return map[role] || "/login";
 }
 
 export const PublicNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('platform');
+  const [activeSection, setActiveSection] = useState<string>("platform");
   const [isScrolled, setIsScrolled] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const clickedRef = useRef<string | null>(null);
@@ -46,7 +54,7 @@ export const PublicNavbar: React.FC = () => {
   const { isAuthenticated, role, logout, getDashboardPath } = useAuthStore();
   const dashboardPath = getDashboardPath();
 
-  const isLandingPage = pathname === '/';
+  const isLandingPage = pathname === "/";
 
   // ─── Scroll-spy with IntersectionObserver ───────────────────────────────
   useEffect(() => {
@@ -55,7 +63,7 @@ export const PublicNavbar: React.FC = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     // Give page time to render sections
     const setupObserver = () => {
@@ -76,16 +84,18 @@ export const PublicNavbar: React.FC = () => {
           // Find the topmost visible section
           const visible = entries
             .filter((e) => e.isIntersecting)
-            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            .sort(
+              (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
+            );
 
           if (visible.length > 0) {
             setActiveSection(visible[0].target.id);
           }
         },
         {
-          rootMargin: '-60px 0px -40% 0px',
+          rootMargin: "-60px 0px -40% 0px",
           threshold: 0.1,
-        }
+        },
       );
 
       elements.forEach((el) => observer.observe(el));
@@ -97,7 +107,7 @@ export const PublicNavbar: React.FC = () => {
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
       if (observerRef.current) observerRef.current.disconnect();
     };
   }, [isLandingPage, pathname]);
@@ -129,15 +139,15 @@ export const PublicNavbar: React.FC = () => {
 
       const navHeight = 56; // fixed navbar height
       const top = el.getBoundingClientRect().top + window.scrollY - navHeight;
-      window.scrollTo({ top, behavior: 'smooth' });
+      window.scrollTo({ top, behavior: "smooth" });
     },
-    [isLandingPage, router]
+    [isLandingPage, router],
   );
 
   // ─── Handle hash on mount (e.g. navigated from another page) ────────────
   useEffect(() => {
     if (!isLandingPage) return;
-    const hash = window.location.hash.replace('#', '');
+    const hash = window.location.hash.replace("#", "");
     if (hash) {
       setTimeout(() => scrollToSection(hash), 200);
     }
@@ -145,7 +155,7 @@ export const PublicNavbar: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/');
+    router.replace("/");
     setMobileMenuOpen(false);
   };
 
@@ -154,17 +164,18 @@ export const PublicNavbar: React.FC = () => {
     return LANDING_SECTIONS.map((section) => {
       const isActive = isLandingPage
         ? activeSection === section.id
-        : pathname === `/${section.id}` || pathname === `/${section.id.replace('pillars', 'architecture')}`;
+        : pathname === `/${section.id}` ||
+          pathname === `/${section.id.replace("pillars", "architecture")}`;
 
       return (
         <button
           key={section.id}
           onClick={(e) => scrollToSection(section.id, e)}
           className={clsx(
-            'relative py-1.5 transition-colors font-medium text-xs whitespace-nowrap cursor-pointer',
+            "relative py-1.5 transition-colors font-medium text-xs whitespace-nowrap cursor-pointer",
             isActive
-              ? 'text-primary font-bold'
-              : 'text-muted-foreground hover:text-foreground'
+              ? "text-primary font-bold"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {section.label}
@@ -180,17 +191,18 @@ export const PublicNavbar: React.FC = () => {
     return LANDING_SECTIONS.map((section) => {
       const isActive = isLandingPage
         ? activeSection === section.id
-        : pathname === `/${section.id}` || pathname === `/${section.id.replace('pillars', 'architecture')}`;
+        : pathname === `/${section.id}` ||
+          pathname === `/${section.id.replace("pillars", "architecture")}`;
 
       return (
         <button
           key={section.id}
           onClick={(e) => scrollToSection(section.id, e)}
           className={clsx(
-            'rounded-md px-3 py-2 transition-colors flex items-center justify-between w-full text-xs font-medium cursor-pointer',
+            "rounded-md px-3 py-2 transition-colors flex items-center justify-between w-full text-xs font-medium cursor-pointer",
             isActive
-              ? 'bg-secondary text-foreground font-bold'
-              : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+              ? "bg-secondary text-foreground font-bold"
+              : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
           )}
         >
           <span>{section.label}</span>
@@ -203,13 +215,13 @@ export const PublicNavbar: React.FC = () => {
   return (
     <header
       className={clsx(
-        'fixed left-0 right-0 top-0 z-50 w-full border-b border-border/70 bg-background/85 backdrop-blur-xl transition-shadow duration-300',
-        isScrolled ? 'shadow-2xl shadow-black/20' : 'shadow-none'
+        "fixed left-0 right-0 top-0 z-50 w-full border-b border-border/70 bg-background/85 backdrop-blur-xl transition-shadow duration-300",
+        isScrolled ? "shadow-2xl shadow-black/20" : "shadow-none",
       )}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <button
-          onClick={() => scrollToSection('platform')}
+          onClick={() => scrollToSection("platform")}
           className="flex items-center gap-2.5 group cursor-pointer"
         >
           <div className="relative flex size-9 items-center justify-center overflow-hidden rounded-xl border border-primary/50 bg-card shadow-subtle transition-transform group-hover:scale-105">
@@ -270,7 +282,11 @@ export const PublicNavbar: React.FC = () => {
           className="p-2 rounded-md text-foreground hover:bg-muted/60 lg:hidden"
           aria-label="Toggle menu"
         >
-          {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          {mobileMenuOpen ? (
+            <X className="size-5" />
+          ) : (
+            <Menu className="size-5" />
+          )}
         </button>
       </div>
 

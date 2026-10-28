@@ -2,29 +2,45 @@
  * MetaMask & SIWE (EIP-4361) Client Utilities for PDSW Portal
  */
 
-export const METAMASK_DOWNLOAD_URL = 'https://metamask.io/download/';
+export const METAMASK_DOWNLOAD_URL = "https://metamask.io/download/";
 
 // Default supported chain ID (Sepolia: 11155111, Ethereum Mainnet: 1, Hardhat: 31337)
 export const DEFAULT_CHAIN_ID = parseInt(
-  process.env.NEXT_PUBLIC_CHAIN_ID || '11155111',
-  10
+  process.env.NEXT_PUBLIC_CHAIN_ID || "11155111",
+  10,
 );
 
-export const SUPPORTED_NETWORKS: Record<number, { name: string; hexId: string; rpcUrls?: string[] }> = {
-  1: { name: 'Ethereum Mainnet', hexId: '0x1' },
-  11155111: { name: 'Sepolia Testnet', hexId: '0xaa36a7', rpcUrls: ['https://rpc.sepolia.org'] },
-  31337: { name: 'Hardhat Localhost', hexId: '0x7a69', rpcUrls: ['http://127.0.0.1:8545'] },
-  1337: { name: 'Ganache Localhost', hexId: '0x539', rpcUrls: ['http://127.0.0.1:8545'] },
+export const SUPPORTED_NETWORKS: Record<
+  number,
+  { name: string; hexId: string; rpcUrls?: string[] }
+> = {
+  1: { name: "Ethereum Mainnet", hexId: "0x1" },
+  11155111: {
+    name: "Sepolia Testnet",
+    hexId: "0xaa36a7",
+    rpcUrls: ["https://rpc.sepolia.org"],
+  },
+  31337: {
+    name: "Hardhat Localhost",
+    hexId: "0x7a69",
+    rpcUrls: ["http://127.0.0.1:8545"],
+  },
+  1337: {
+    name: "Ganache Localhost",
+    hexId: "0x539",
+    rpcUrls: ["http://127.0.0.1:8545"],
+  },
 };
 
 /**
  * Checks if MetaMask / window.ethereum is available in the browser
  */
 export function isMetaMaskInstalled(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
   return Boolean(
-    typeof window.ethereum !== 'undefined' &&
-      (window.ethereum.isMetaMask || typeof window.ethereum.request === 'function')
+    typeof window.ethereum !== "undefined" &&
+    (window.ethereum.isMetaMask ||
+      typeof window.ethereum.request === "function"),
   );
 }
 
@@ -32,8 +48,8 @@ export function isMetaMaskInstalled(): boolean {
  * Redirects user to the official MetaMask download page
  */
 export function redirectToMetaMaskDownload(): void {
-  if (typeof window !== 'undefined') {
-    window.open(METAMASK_DOWNLOAD_URL, '_blank', 'noopener,noreferrer');
+  if (typeof window !== "undefined") {
+    window.open(METAMASK_DOWNLOAD_URL, "_blank", "noopener,noreferrer");
   }
 }
 
@@ -41,7 +57,7 @@ export function redirectToMetaMaskDownload(): void {
  * Shortens Ethereum address to format: 0x1234...ABCD
  */
 export function shortenAddress(address?: string | null): string {
-  if (!address) return '';
+  if (!address) return "";
   if (address.length <= 10) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
@@ -51,24 +67,24 @@ export function shortenAddress(address?: string | null): string {
  */
 export async function requestMetaMaskAccounts(): Promise<string> {
   if (!isMetaMaskInstalled()) {
-    throw new Error('METAMASK_NOT_INSTALLED');
+    throw new Error("METAMASK_NOT_INSTALLED");
   }
 
   try {
     const accounts = (await window.ethereum.request({
-      method: 'eth_requestAccounts',
+      method: "eth_requestAccounts",
     })) as string[];
 
     if (!accounts || accounts.length === 0) {
-      throw new Error('No accounts authorized in MetaMask.');
+      throw new Error("No accounts authorized in MetaMask.");
     }
 
     return accounts[0];
   } catch (err: any) {
     if (err.code === 4001) {
-      throw new Error('User rejected wallet connection request.');
+      throw new Error("User rejected wallet connection request.");
     }
-    throw new Error(err.message || 'Failed to connect to MetaMask wallet.');
+    throw new Error(err.message || "Failed to connect to MetaMask wallet.");
   }
 }
 
@@ -78,7 +94,9 @@ export async function requestMetaMaskAccounts(): Promise<string> {
 export async function getCurrentChainId(): Promise<number> {
   if (!isMetaMaskInstalled()) return DEFAULT_CHAIN_ID;
   try {
-    const hexChainId = (await window.ethereum.request({ method: 'eth_chainId' })) as string;
+    const hexChainId = (await window.ethereum.request({
+      method: "eth_chainId",
+    })) as string;
     return parseInt(hexChainId, 16);
   } catch {
     return DEFAULT_CHAIN_ID;
@@ -88,7 +106,9 @@ export async function getCurrentChainId(): Promise<number> {
 /**
  * Ensures user is connected to the supported network or prompts a network switch
  */
-export async function ensureSupportedNetwork(targetChainId: number = DEFAULT_CHAIN_ID): Promise<void> {
+export async function ensureSupportedNetwork(
+  targetChainId: number = DEFAULT_CHAIN_ID,
+): Promise<void> {
   if (!isMetaMaskInstalled()) return;
 
   const currentChain = await getCurrentChainId();
@@ -99,18 +119,18 @@ export async function ensureSupportedNetwork(targetChainId: number = DEFAULT_CHA
 
   try {
     await window.ethereum.request({
-      method: 'wallet_switchEthereumChain',
+      method: "wallet_switchEthereumChain",
       params: [{ chainId: hexChainId }],
     });
   } catch (switchError: any) {
     if (switchError.code === 4001) {
-      throw new Error('Please switch MetaMask to the Sepolia network.');
+      throw new Error("Please switch MetaMask to the Sepolia network.");
     }
     // Chain not added to MetaMask (error 4902)
     if (switchError.code === 4902 && targetNetwork?.rpcUrls) {
       try {
         await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
+          method: "wallet_addEthereumChain",
           params: [
             {
               chainId: hexChainId,
@@ -120,16 +140,16 @@ export async function ensureSupportedNetwork(targetChainId: number = DEFAULT_CHA
           ],
         });
       } catch {
-        throw new Error('Please switch MetaMask to the Sepolia network.');
+        throw new Error("Please switch MetaMask to the Sepolia network.");
       }
     } else {
-      throw new Error('Please switch MetaMask to the Sepolia network.');
+      throw new Error("Please switch MetaMask to the Sepolia network.");
     }
   }
 
   const finalChain = await getCurrentChainId();
   if (finalChain !== targetChainId) {
-    throw new Error('Please switch MetaMask to the Sepolia network.');
+    throw new Error("Please switch MetaMask to the Sepolia network.");
   }
 }
 
@@ -149,47 +169,50 @@ export function createSiweMessage(params: {
 }): string {
   const statement =
     params.statement ||
-    'Sign in to Public Distribution System Welfare (PDSW) Government Portal with your verified wallet.';
-  const version = params.version || '1';
+    "Sign in to Public Distribution System Welfare (PDSW) Government Portal with your verified wallet.";
+  const version = params.version || "1";
 
   return [
     `${params.domain} wants you to sign in with your Ethereum account:`,
     params.address,
-    '',
+    "",
     statement,
-    '',
+    "",
     `URI: ${params.uri}`,
     `Version: ${version}`,
     `Chain ID: ${params.chainId}`,
     `Nonce: ${params.nonce}`,
     `Issued At: ${params.issuedAt}`,
     `Expiration Time: ${params.expirationTime}`,
-  ].join('\n');
+  ].join("\n");
 }
 
 /**
  * Requests cryptographic signature of the SIWE message via personal_sign
  */
-export async function signSiweMessage(message: string, address: string): Promise<string> {
+export async function signSiweMessage(
+  message: string,
+  address: string,
+): Promise<string> {
   if (!isMetaMaskInstalled()) {
-    throw new Error('METAMASK_NOT_INSTALLED');
+    throw new Error("METAMASK_NOT_INSTALLED");
   }
 
   try {
     const signature = (await window.ethereum.request({
-      method: 'personal_sign',
+      method: "personal_sign",
       params: [message, address],
     })) as string;
 
     if (!signature) {
-      throw new Error('No signature returned from wallet.');
+      throw new Error("No signature returned from wallet.");
     }
 
     return signature;
   } catch (err: any) {
     if (err.code === 4001) {
-      throw new Error('Signature request was rejected in MetaMask.');
+      throw new Error("Signature request was rejected in MetaMask.");
     }
-    throw new Error(err.message || 'Failed to sign authentication message.');
+    throw new Error(err.message || "Failed to sign authentication message.");
   }
 }

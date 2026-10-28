@@ -19,7 +19,6 @@ async function main() {
   const contractAddress = await registry.getAddress();
   console.log("✔ PDSWDocumentAuditRegistry deployed to:", contractAddress);
 
-  // Read Artifact ABI
   const artifactPath = path.join(__dirname, "..", "artifacts", "contracts", "PDSWDocumentAuditRegistry.sol", "PDSWDocumentAuditRegistry.json");
   let artifactAbi = [];
   if (fs.existsSync(artifactPath)) {
@@ -43,7 +42,6 @@ async function main() {
   fs.writeFileSync(abiDestPath, JSON.stringify(exportData, null, 2));
   console.log("✔ Exported ABI & address to:", abiDestPath);
 
-  // Also export to frontend if directory exists
   const frontendContractsDir = path.join(__dirname, "..", "..", "frontend", "src", "contracts");
   if (!fs.existsSync(frontendContractsDir)) {
     fs.mkdirSync(frontendContractsDir, { recursive: true });

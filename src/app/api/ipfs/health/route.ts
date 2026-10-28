@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-const PINATA_SERVICE_URL = process.env.PINATA_SERVICE_URL || 'http://localhost:5001';
+const PINATA_SERVICE_URL =
+  process.env.PINATA_SERVICE_URL || "http://localhost:5001";
 
 export async function GET() {
   try {
@@ -9,8 +10,8 @@ export async function GET() {
     return NextResponse.json(data, { status: pinataRes.status });
   } catch {
     return NextResponse.json(
-      { status: 'unavailable', error: 'Pinata service is not reachable.' },
-      { status: 503 }
+      { status: "unavailable", error: "Pinata service is not reachable." },
+      { status: 503 },
     );
   }
 }

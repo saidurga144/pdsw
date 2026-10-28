@@ -1,46 +1,53 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Shield, Key, CheckCircle2, AlertCircle, ArrowRight, UserPlus } from 'lucide-react';
+import React, { useState } from "react";
+import Link from "next/link";
+import {
+  Shield,
+  Key,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  UserPlus,
+} from "lucide-react";
 
 export default function SetupPage() {
   const [formData, setFormData] = useState({
-    bootstrapToken: '',
-    fullName: '',
-    email: '',
-    password: '',
-    phone: '',
-    jurisdiction: 'National Headquarters, New Delhi',
+    bootstrapToken: "",
+    fullName: "",
+    email: "",
+    password: "",
+    phone: "",
+    jurisdiction: "National Headquarters, New Delhi",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [createdAdmin, setCreatedAdmin] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (formData.phone && formData.phone.length !== 10) {
-      setError('Mobile number must be exactly 10 digits.');
+      setError("Mobile number must be exactly 10 digits.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const res = await fetch('/api/admin/bootstrap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/bootstrap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error || 'Failed to initialize administrator.');
+        setError(data.error || "Failed to initialize administrator.");
         setLoading(false);
         return;
       }
@@ -48,7 +55,7 @@ export default function SetupPage() {
       setSuccess(true);
       setCreatedAdmin(data.user);
     } catch (err: any) {
-      setError(err?.message || 'Network error while initializing admin.');
+      setError(err?.message || "Network error while initializing admin.");
     } finally {
       setLoading(false);
     }
@@ -76,12 +83,19 @@ export default function SetupPage() {
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-100">System Initialized Successfully!</h2>
+                <h2 className="text-base font-bold text-slate-100">
+                  System Initialized Successfully!
+                </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  First administrator account created for <span className="text-cyan-400 font-mono font-bold">{createdAdmin?.email}</span>.
+                  First administrator account created for{" "}
+                  <span className="text-cyan-400 font-mono font-bold">
+                    {createdAdmin?.email}
+                  </span>
+                  .
                 </p>
                 <p className="text-[11px] text-amber-400 mt-2 bg-amber-950/40 p-2.5 rounded-lg border border-amber-800/60">
-                  The bootstrap endpoint is now permanently disabled for security.
+                  The bootstrap endpoint is now permanently disabled for
+                  security.
                 </p>
               </div>
 
@@ -112,7 +126,9 @@ export default function SetupPage() {
                   required
                   placeholder="Enter BOOTSTRAP_ADMIN_SECRET from backend/.env"
                   value={formData.bootstrapToken}
-                  onChange={(e) => setFormData({ ...formData, bootstrapToken: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bootstrapToken: e.target.value })
+                  }
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
                 />
                 <span className="text-[10px] text-slate-500 mt-1 block">
@@ -130,7 +146,9 @@ export default function SetupPage() {
                     required
                     placeholder="e.g. System Administrator"
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, fullName: e.target.value })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -144,7 +162,9 @@ export default function SetupPage() {
                     required
                     placeholder="e.g. admin@yourdomain.gov.in"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -158,7 +178,9 @@ export default function SetupPage() {
                     required
                     placeholder="Create a strong password (min. 8 characters)"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -173,13 +195,17 @@ export default function SetupPage() {
                     placeholder="e.g. 9876543210"
                     value={formData.phone}
                     onChange={(e) => {
-                      const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      const digitsOnly = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10);
                       setFormData({ ...formData, phone: digitsOnly });
                     }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
                   />
                   <span className="text-[10px] text-slate-500 mt-0.5 block">
-                    {formData.phone ? `${formData.phone.length}/10 digits` : '10-digit mobile number'}
+                    {formData.phone
+                      ? `${formData.phone.length}/10 digits`
+                      : "10-digit mobile number"}
                   </span>
                 </div>
 
@@ -190,7 +216,9 @@ export default function SetupPage() {
                   <input
                     type="text"
                     value={formData.jurisdiction}
-                    onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, jurisdiction: e.target.value })
+                    }
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
@@ -202,11 +230,18 @@ export default function SetupPage() {
                 className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-lg transition-all shadow flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>{loading ? 'Initializing Administrator...' : 'Initialize System'}</span>
+                <span>
+                  {loading
+                    ? "Initializing Administrator..."
+                    : "Initialize System"}
+                </span>
               </button>
 
               <div className="text-center pt-2">
-                <Link href="/auth/login" className="text-xs text-slate-400 hover:text-cyan-400 transition-colors">
+                <Link
+                  href="/auth/login"
+                  className="text-xs text-slate-400 hover:text-cyan-400 transition-colors"
+                >
                   Already initialized? Go to Login
                 </Link>
               </div>

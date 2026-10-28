@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useNotificationStore } from '@/stores/notification.store';
-import { CheckCheck, Bell } from 'lucide-react';
+import React from "react";
+import { useNotificationStore } from "@/stores/notification.store";
+import { CheckCheck, Bell } from "lucide-react";
 
 export default function NotificationsPage() {
   const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
@@ -29,8 +29,12 @@ export default function NotificationsPage() {
         {notifications.length === 0 ? (
           <div className="bg-card border border-border rounded-md p-10 text-center space-y-2 shadow-subtle">
             <Bell className="size-8 text-muted-foreground mx-auto opacity-40" />
-            <p className="text-sm font-semibold text-foreground">No Notifications</p>
-            <p className="text-xs text-muted-foreground">You have no new notifications at this time.</p>
+            <p className="text-sm font-semibold text-foreground">
+              No Notifications
+            </p>
+            <p className="text-xs text-muted-foreground">
+              You have no new notifications at this time.
+            </p>
           </div>
         ) : (
           notifications.map((ntf) => (
@@ -39,8 +43,8 @@ export default function NotificationsPage() {
               onClick={() => markAsRead(ntf.id)}
               className={`p-4 rounded-md border transition-all cursor-pointer space-y-2 shadow-subtle ${
                 !ntf.read
-                  ? 'bg-card border-primary/40'
-                  : 'bg-muted/30 border-border opacity-70'
+                  ? "bg-card border-primary/40"
+                  : "bg-muted/30 border-border opacity-70"
               }`}
             >
               <div className="flex items-center justify-between text-xs">
@@ -52,7 +56,9 @@ export default function NotificationsPage() {
                 </span>
               </div>
 
-              <h3 className="ben-subsection-title text-foreground">{ntf.title}</h3>
+              <h3 className="ben-subsection-title text-foreground">
+                {ntf.title}
+              </h3>
               <p className="text-xs text-muted-foreground">{ntf.message}</p>
             </div>
           ))

@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
-import { withAuth, getClientIp } from '@/server/middleware/auth.middleware';
-import { ServerBeneficiaryService } from '@/server/services/beneficiary.service';
+import { NextResponse } from "next/server";
+import { withAuth, getClientIp } from "@/server/middleware/auth.middleware";
+import { ServerBeneficiaryService } from "@/server/services/beneficiary.service";
 
 export const POST = withAuth(
   async (req, { user }) => {
@@ -9,7 +9,7 @@ export const POST = withAuth(
     const { beneficiaryId, requestType, previousData, requestedData } = body;
 
     const result = await ServerBeneficiaryService.submitChangeRequest({
-      beneficiaryId: beneficiaryId || 'ben-001',
+      beneficiaryId: beneficiaryId || "ben-001",
       requestType,
       previousData,
       requestedData,
@@ -20,5 +20,5 @@ export const POST = withAuth(
 
     return NextResponse.json(result);
   },
-  { requiredRoles: ['BENEFICIARY', 'OFFICER', 'ADMIN'] }
+  { requiredRoles: ["BENEFICIARY", "OFFICER", "ADMIN"] },
 );

@@ -1,15 +1,19 @@
-import { AuditService } from '@/server/services/audit.service';
-import { Role } from '@/types';
-import { normalizeRole } from '@/lib/role-utils';
+import { AuditService } from "@/server/services/audit.service";
+import { Role } from "@/types";
+import { normalizeRole } from "@/lib/role-utils";
 
-const FASTAPI_URL = (process.env.FASTAPI_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8002').replace('localhost', '127.0.0.1');
+const FASTAPI_URL = (
+  process.env.FASTAPI_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "http://127.0.0.1:8002"
+).replace("localhost", "127.0.0.1");
 
 export class ProvisionError extends Error {
   status: number;
 
   constructor(message: string, status = 500) {
     super(message);
-    this.name = 'ProvisionError';
+    this.name = "ProvisionError";
     this.status = status;
   }
 }
@@ -19,15 +23,15 @@ function normalizeEmail(email: string): string {
 }
 
 function mapBackendUser(u: Record<string, unknown>) {
-  const rawStatus = String(u.status || 'ACTIVE').toUpperCase();
+  const rawStatus = String(u.status || "ACTIVE").toUpperCase();
   return {
     id: (u.id || u._id) as string,
     name: (u.full_name || u.name || u.email) as string,
     email: u.email as string,
-    role: normalizeRole(String(u.role || '')),
-    phone: (u.phone || '') as string,
-    jurisdiction: (u.jurisdiction || '') as string,
-    status: rawStatus === 'DEACTIVATED' ? 'INACTIVE' : rawStatus,
+    role: normalizeRole(String(u.role || "")),
+    phone: (u.phone || "") as string,
+    jurisdiction: (u.jurisdiction || "") as string,
+    status: rawStatus === "DEACTIVATED" ? "INACTIVE" : rawStatus,
     lastLoginAt: (u.last_login_at || null) as string | null,
   };
 }
@@ -37,7 +41,9 @@ export class ServerAdminService {
    * Retrieves all registered system users from the FastAPI backend (MongoDB/SQLite).
    */
   static async getAllUsers(token?: string) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -45,22 +51,24 @@ export class ServerAdminService {
     let res: Response;
     try {
       res = await fetch(`${FASTAPI_URL}/api/auth/users`, {
-        method: 'GET',
+        method: "GET",
         headers,
-        cache: 'no-store',
+        cache: "no-store",
       });
     } catch {
       throw new ProvisionError(
-        'Unable to reach the authentication backend. Ensure the FastAPI server is running.',
-        503
+        "Unable to reach the authentication backend. Ensure the FastAPI server is running.",
+        503,
       );
     }
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new ProvisionError(
-        data.detail || data.error || `Failed to load users (HTTP ${res.status}).`,
-        res.status
+        data.detail ||
+          data.error ||
+          `Failed to load users (HTTP ${res.status}).`,
+        res.status,
       );
     }
 
@@ -87,29 +95,31 @@ export class ServerAdminService {
     },
     adminId: string,
     ipAddress?: string,
-    token?: string
+    token?: string,
   ) {
     if (!userData.password || userData.password.length < 6) {
-      throw new ProvisionError('Password must be at least 6 characters.', 400);
+      throw new ProvisionError("Password must be at least 6 characters.", 400);
     }
 
     const canonicalRole = normalizeRole(String(userData.role));
     const cleanEmail = normalizeEmail(userData.email);
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     } else {
       throw new ProvisionError(
-        'Admin session token missing. Please log out and log in again before provisioning users.',
-        401
+        "Admin session token missing. Please log out and log in again before provisioning users.",
+        401,
       );
     }
 
     let res: Response;
     try {
       res = await fetch(`${FASTAPI_URL}/api/auth/admin/provision-user`, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: JSON.stringify({
           email: cleanEmail,
@@ -122,8 +132,8 @@ export class ServerAdminService {
       });
     } catch {
       throw new ProvisionError(
-        'Unable to reach the authentication backend. Ensure the FastAPI server is running on the configured port.',
-        503
+        "Unable to reach the authentication backend. Ensure the FastAPI server is running on the configured port.",
+        503,
       );
     }
 
@@ -131,20 +141,25 @@ export class ServerAdminService {
 
     if (!res.ok) {
       const detail =
-        (typeof data.detail === 'string' && data.detail) ||
-        (Array.isArray(data.detail) && data.detail.map((d: { msg?: string }) => d.msg).join('; ')) ||
+        (typeof data.detail === "string" && data.detail) ||
+        (Array.isArray(data.detail) &&
+          data.detail.map((d: { msg?: string }) => d.msg).join("; ")) ||
         data.error ||
         `User provisioning failed (HTTP ${res.status}).`;
 
       await AuditService.recordEvent({
         actorId: adminId,
-        actorRole: 'ADMIN',
-        action: 'CREATE_USER',
-        resource: 'USER',
+        actorRole: "ADMIN",
+        action: "CREATE_USER",
+        resource: "USER",
         resourceId: cleanEmail,
-        newState: { email: cleanEmail, role: canonicalRole, fullName: userData.fullName },
+        newState: {
+          email: cleanEmail,
+          role: canonicalRole,
+          fullName: userData.fullName,
+        },
         ipAddress,
-        outcome: 'FAILURE',
+        outcome: "FAILURE",
       });
 
       throw new ProvisionError(detail, res.status);
@@ -154,13 +169,17 @@ export class ServerAdminService {
 
     await AuditService.recordEvent({
       actorId: adminId,
-      actorRole: 'ADMIN',
-      action: 'CREATE_USER',
-      resource: 'USER',
+      actorRole: "ADMIN",
+      action: "CREATE_USER",
+      resource: "USER",
       resourceId: created.id,
-      newState: { email: cleanEmail, role: canonicalRole, fullName: userData.fullName },
+      newState: {
+        email: cleanEmail,
+        role: canonicalRole,
+        fullName: userData.fullName,
+      },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return {
@@ -175,49 +194,66 @@ export class ServerAdminService {
   /**
    * Activates or deactivates a user account through the protected FastAPI backend.
    */
-  static async updateUserStatus(userId: string, status: 'ACTIVE' | 'INACTIVE', adminId: string, token?: string, ipAddress?: string) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  static async updateUserStatus(
+    userId: string,
+    status: "ACTIVE" | "INACTIVE",
+    adminId: string,
+    token?: string,
+    ipAddress?: string,
+  ) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     } else {
-      throw new ProvisionError('Admin session token missing.', 401);
+      throw new ProvisionError("Admin session token missing.", 401);
     }
 
-    const action = status === 'ACTIVE' ? 'activate' : 'deactivate';
+    const action = status === "ACTIVE" ? "activate" : "deactivate";
     let res: Response;
     try {
-      res = await fetch(`${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}/${action}`, {
-        method: 'PATCH',
-        headers,
-      });
+      res = await fetch(
+        `${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}/${action}`,
+        {
+          method: "PATCH",
+          headers,
+        },
+      );
     } catch {
-      throw new ProvisionError('Unable to reach backend service.', 503);
+      throw new ProvisionError("Unable to reach backend service.", 503);
     }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const errorMsg = data.detail || data.error || `Failed to ${action} user (HTTP ${res.status}).`;
+      const errorMsg =
+        data.detail ||
+        data.error ||
+        `Failed to ${action} user (HTTP ${res.status}).`;
       await AuditService.recordEvent({
         actorId: adminId,
-        actorRole: 'ADMIN',
-        action: status === 'ACTIVE' ? 'USER_ACTIVATION_FAILED' : 'USER_DEACTIVATION_FAILED',
-        resource: 'USER',
+        actorRole: "ADMIN",
+        action:
+          status === "ACTIVE"
+            ? "USER_ACTIVATION_FAILED"
+            : "USER_DEACTIVATION_FAILED",
+        resource: "USER",
         resourceId: userId,
         ipAddress,
-        outcome: 'FAILURE',
+        outcome: "FAILURE",
       });
       throw new ProvisionError(errorMsg, res.status);
     }
 
     await AuditService.recordEvent({
       actorId: adminId,
-      actorRole: 'ADMIN',
-      action: status === 'ACTIVE' ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
-      resource: 'USER',
+      actorRole: "ADMIN",
+      action: status === "ACTIVE" ? "USER_ACTIVATED" : "USER_DEACTIVATED",
+      resource: "USER",
       resourceId: userId,
       newState: { status },
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return data;
@@ -226,47 +262,60 @@ export class ServerAdminService {
   /**
    * Deactivates a user account via FastAPI backend.
    */
-  static async deleteUser(userId: string, adminId: string, token?: string, ipAddress?: string) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  static async deleteUser(
+    userId: string,
+    adminId: string,
+    token?: string,
+    ipAddress?: string,
+  ) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     } else {
-      throw new ProvisionError('Admin session token missing.', 401);
+      throw new ProvisionError("Admin session token missing.", 401);
     }
 
     let res: Response;
     try {
-      res = await fetch(`${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}`, {
-        method: 'DELETE',
-        headers,
-      });
+      res = await fetch(
+        `${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+          headers,
+        },
+      );
     } catch {
-      throw new ProvisionError('Unable to reach backend service.', 503);
+      throw new ProvisionError("Unable to reach backend service.", 503);
     }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const errorMsg = data.detail || data.error || `Failed to deactivate user (HTTP ${res.status}).`;
+      const errorMsg =
+        data.detail ||
+        data.error ||
+        `Failed to deactivate user (HTTP ${res.status}).`;
       await AuditService.recordEvent({
         actorId: adminId,
-        actorRole: 'ADMIN',
-        action: 'USER_DEACTIVATION_FAILED',
-        resource: 'USER',
+        actorRole: "ADMIN",
+        action: "USER_DEACTIVATION_FAILED",
+        resource: "USER",
         resourceId: userId,
         ipAddress,
-        outcome: 'FAILURE',
+        outcome: "FAILURE",
       });
       throw new ProvisionError(errorMsg, res.status);
     }
 
     await AuditService.recordEvent({
       actorId: adminId,
-      actorRole: 'ADMIN',
-      action: 'USER_DEACTIVATED',
-      resource: 'USER',
+      actorRole: "ADMIN",
+      action: "USER_DEACTIVATED",
+      resource: "USER",
       resourceId: userId,
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return data;
@@ -275,38 +324,51 @@ export class ServerAdminService {
   /**
    * Generates a password reset token for a user (Admin only).
    */
-  static async sendPasswordReset(userId: string, adminId: string, token?: string, ipAddress?: string) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  static async sendPasswordReset(
+    userId: string,
+    adminId: string,
+    token?: string,
+    ipAddress?: string,
+  ) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     } else {
-      throw new ProvisionError('Admin session token missing.', 401);
+      throw new ProvisionError("Admin session token missing.", 401);
     }
 
     let res: Response;
     try {
-      res = await fetch(`${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}/reset-password`, {
-        method: 'POST',
-        headers,
-      });
+      res = await fetch(
+        `${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}/reset-password`,
+        {
+          method: "POST",
+          headers,
+        },
+      );
     } catch {
-      throw new ProvisionError('Unable to reach backend service.', 503);
+      throw new ProvisionError("Unable to reach backend service.", 503);
     }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const errorMsg = data.detail || data.error || `Failed to reset password (HTTP ${res.status}).`;
+      const errorMsg =
+        data.detail ||
+        data.error ||
+        `Failed to reset password (HTTP ${res.status}).`;
       throw new ProvisionError(errorMsg, res.status);
     }
 
     await AuditService.recordEvent({
       actorId: adminId,
-      actorRole: 'ADMIN',
-      action: 'GENERATE_PASSWORD_RESET',
-      resource: 'USER',
+      actorRole: "ADMIN",
+      action: "GENERATE_PASSWORD_RESET",
+      resource: "USER",
       resourceId: userId,
       ipAddress,
-      outcome: 'SUCCESS',
+      outcome: "SUCCESS",
     });
 
     return data;
@@ -316,16 +378,18 @@ export class ServerAdminService {
    * Retrieves platform-wide KPIs from the backend.
    */
   static async getPlatformStats(token?: string) {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
 
     try {
       const res = await fetch(`${FASTAPI_URL}/api/auth/stats`, {
-        method: 'GET',
+        method: "GET",
         headers,
-        cache: 'no-store',
+        cache: "no-store",
       });
       if (res.ok) {
         const data = await res.json();

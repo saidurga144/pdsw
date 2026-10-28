@@ -1,51 +1,61 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { UserCheck, Shield, Settings, Eye, Lock, ArrowRight } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import {
+  UserCheck,
+  Shield,
+  Settings,
+  Eye,
+  Lock,
+  ArrowRight,
+} from "lucide-react";
 
 export const RoleEcosystem: React.FC = () => {
   const roles = [
     {
-      role: 'beneficiary',
-      title: 'Beneficiary',
-      subtitle: 'Citizen Entitlement Portal',
-      desc: 'Access personal ration records, family dependents, monthly quota status, transaction receipts, and submit change requests.',
+      role: "beneficiary",
+      title: "Beneficiary",
+      subtitle: "Citizen Entitlement Portal",
+      desc: "Access personal ration records, family dependents, monthly quota status, transaction receipts, and submit change requests.",
       icon: UserCheck,
-      badge: 'Public Service',
-      href: '/login/beneficiary',
+      badge: "Public Service",
+      href: "/login/beneficiary",
     },
     {
-      role: 'officer',
-      title: 'PDS Officer',
-      subtitle: 'Inspector Operational Portal',
-      desc: 'Manage beneficiary onboarding, document verification, attribute diff approvals, and biometric commodity distribution.',
+      role: "officer",
+      title: "PDS Officer",
+      subtitle: "Inspector Operational Portal",
+      desc: "Manage beneficiary onboarding, document verification, attribute diff approvals, and biometric commodity distribution.",
       icon: Shield,
-      badge: 'Field Operations',
-      href: '/login/officer',
+      badge: "Field Operations",
+      href: "/login/officer",
     },
     {
-      role: 'admin',
-      title: 'Administrator',
-      subtitle: 'Central HQ Command',
-      desc: 'Oversee system-wide operations, AI risk intelligence thresholds, cryptographic integrity sweeps, and user provisioning.',
+      role: "admin",
+      title: "Administrator",
+      subtitle: "Central HQ Command",
+      desc: "Oversee system-wide operations, AI risk intelligence thresholds, cryptographic integrity sweeps, and user provisioning.",
       icon: Settings,
-      badge: 'System Control',
-      href: '/login/admin',
+      badge: "System Control",
+      href: "/login/admin",
     },
     {
-      role: 'soc',
-      title: 'SOC Analyst',
-      subtitle: 'CERT-In SOC Center',
-      desc: 'Monitor real-time cyber threats, failed authentication spikes, RBAC violations, and explainable AI account compromises.',
+      role: "soc",
+      title: "SOC Analyst",
+      subtitle: "CERT-In SOC Center",
+      desc: "Monitor real-time cyber threats, failed authentication spikes, RBAC violations, and explainable AI account compromises.",
       icon: Lock,
-      badge: 'Cyber Defense',
-      href: '/login/soc',
+      badge: "Cyber Defense",
+      href: "/login/soc",
     },
   ];
 
   return (
-    <section id="roles" className="py-14 border-t border-border bg-background scroll-mt-14">
+    <section
+      id="roles"
+      className="py-14 border-t border-border bg-background scroll-mt-14"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-2">
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-foreground bg-secondary px-3 py-1 rounded-md border border-border">
@@ -55,7 +65,8 @@ export const RoleEcosystem: React.FC = () => {
             Role-Based Platform Governance
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Dedicated portals tailored for citizens, operational inspectors, central administrators, and cyber defense teams.
+            Dedicated portals tailored for citizens, operational inspectors,
+            central administrators, and cyber defense teams.
           </p>
         </div>
 
@@ -78,9 +89,15 @@ export const RoleEcosystem: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-bold text-foreground">{item.title}</h3>
-                    <p className="text-[11px] font-semibold text-primary font-mono mt-0.5">{item.subtitle}</p>
-                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{item.desc}</p>
+                    <h3 className="text-sm font-bold text-foreground">
+                      {item.title}
+                    </h3>
+                    <p className="text-[11px] font-semibold text-primary font-mono mt-0.5">
+                      {item.subtitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               </div>

@@ -1,26 +1,33 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { AuthLayout } from '@/components/auth/AuthLayout';
-import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2, KeyRound } from 'lucide-react';
+import React, { useState } from "react";
+import Link from "next/link";
+import { AuthLayout } from "@/components/auth/AuthLayout";
+import {
+  Mail,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  KeyRound,
+} from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [generatedLink, setGeneratedLink] = useState('');
+  const [error, setError] = useState("");
+  const [generatedLink, setGeneratedLink] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
@@ -30,10 +37,12 @@ export default function ForgotPasswordPage() {
           setGeneratedLink(data.reset_url);
         }
       } else {
-        setError(data.error || data.detail || 'Failed to request password reset.');
+        setError(
+          data.error || data.detail || "Failed to request password reset.",
+        );
       }
     } catch (err: any) {
-      setError(err?.message || 'Network error occurred.');
+      setError(err?.message || "Network error occurred.");
     } finally {
       setLoading(false);
     }
@@ -55,7 +64,9 @@ export default function ForgotPasswordPage() {
             )}
 
             <div>
-              <label className="text-foreground font-semibold block mb-1.5">Registered Email Address</label>
+              <label className="text-foreground font-semibold block mb-1.5">
+                Registered Email Address
+              </label>
               <div className="relative">
                 <Mail className="size-4 text-muted-foreground absolute left-3.5 top-3" />
                 <input
@@ -85,7 +96,10 @@ export default function ForgotPasswordPage() {
             </button>
 
             <div className="pt-3 text-center">
-              <Link href="/login" className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1">
+              <Link
+                href="/login"
+                className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1"
+              >
                 <ArrowLeft className="size-3.5" /> Back to Login
               </Link>
             </div>
@@ -95,15 +109,22 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-secondary text-primary border border-border">
               <CheckCircle2 className="size-6" />
             </div>
-            <h3 className="text-base font-bold text-foreground">Reset Token Dispatched</h3>
+            <h3 className="text-base font-bold text-foreground">
+              Reset Token Dispatched
+            </h3>
             <p className="text-muted-foreground text-[11px] leading-relaxed">
-              If an account is associated with <span className="text-primary font-mono font-medium">{email}</span>, a cryptographic reset token has been generated.
+              If an account is associated with{" "}
+              <span className="text-primary font-mono font-medium">
+                {email}
+              </span>
+              , a cryptographic reset token has been generated.
             </p>
 
             {generatedLink && (
               <div className="p-3 bg-secondary/50 border border-border rounded-md text-left">
                 <p className="text-[11px] font-semibold text-foreground mb-1 flex items-center gap-1">
-                  <KeyRound className="size-3.5 text-primary" /> Direct Reset Link:
+                  <KeyRound className="size-3.5 text-primary" /> Direct Reset
+                  Link:
                 </p>
                 <Link
                   href={generatedLink}
