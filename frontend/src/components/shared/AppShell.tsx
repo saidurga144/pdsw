@@ -7,7 +7,6 @@ import { PublicNavbar } from "@/components/landing/PublicNavbar";
 import { PublicFooter } from "@/components/landing/PublicFooter";
 import { HeaderNavbar } from "@/components/shared/HeaderNavbar";
 import { Sidebar } from "@/components/shared/Sidebar";
-import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
 import { GlobalCommandSearch } from "@/components/shared/GlobalCommandSearch";
 import { Shield } from "lucide-react";
 import { normalizeRole } from "@/lib/role-utils";
@@ -142,13 +141,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
     <div className="min-h-screen flex flex-col bg-background text-foreground font-sans w-full overflow-x-hidden">
       <HeaderNavbar />
       <GlobalCommandSearch />
-      <div className="surface-grid flex-1 flex min-w-0 overflow-hidden">
+      <div className="surface-grid flex flex-1 min-w-0 overflow-hidden">
         <Sidebar />
-        <main className="role-portal-content flex-1 min-w-0 overflow-y-auto p-4 sm:p-5 md:p-8 pb-20 md:pb-8 w-full">
+        <main className="role-portal-content min-w-0 w-full flex-1 overflow-y-auto p-4 pb-6 sm:p-5 sm:pb-6 md:p-8 md:pb-8">
           <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </main>
       </div>
-      <MobileBottomNav />
     </div>
   );
 };
