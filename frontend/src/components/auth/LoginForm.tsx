@@ -39,9 +39,31 @@ function friendlyError(err: unknown): {
   message: string;
   canRetryChallenge: boolean;
 } {
-  const providerCode = (err as any)?.code;
-  const msg = (err as any)?.message || "";
+  const errObj = err as any;
+  const providerCode = errObj?.code;
+  const rawMsg =
+    errObj?.response?.data?.error ||
+    errObj?.response?.data?.detail ||
+    errObj?.response?.data?.message ||
+    errObj?.message ||
+    "";
+  const msg = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg);
   const lower = msg.toLowerCase();
+
+  // If intermediate session expired or invalid credentials
+  if (
+    lower.includes("intermediate") ||
+    lower.includes("restart login") ||
+    lower.includes("step 1 database login") ||
+    lower.includes("session expired") ||
+    lower.includes("status code 401")
+  ) {
+    return {
+      message:
+        "Your Step 1 session expired or is invalid. Please click 'Edit' or 'Back to Sign In' to enter your credentials again.",
+      canRetryChallenge: false,
+    };
+  }
 
   if (msg.includes("METAMASK_NOT_INSTALLED") || lower.includes("not installed"))
     return {
@@ -876,7 +898,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
                   <div className="col-span-2">
                     <span className="text-gray-400">Wallet:</span>{" "}
                     <span className="font-mono text-gray-600 text-[10px]">
-                      {verifiedUser.walletAddress
+                      {verifiedUser.walletAddress || (verifiedUser as any).wallet_address
                         ? "Linked securely"
                         : "Not yet linked"}
                     </span>

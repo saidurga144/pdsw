@@ -17,6 +17,7 @@ const MAX_FILE_SIZE_MB = Number(process.env.MAX_FILE_SIZE_MB || 15);
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const ALLOWED_ORIGINS = (
+  process.env.CORS_ORIGINS ||
   process.env.ALLOWED_ORIGINS ||
   "http://localhost:3000,http://127.0.0.1:3000"
 )

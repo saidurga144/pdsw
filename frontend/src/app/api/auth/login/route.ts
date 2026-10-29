@@ -49,9 +49,18 @@ export async function POST(req: NextRequest) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password, role: requestedRole }),
+          signal: AbortSignal.timeout(10000),
         });
 
-        const data = await backendRes.json();
+        let data: any = {};
+        try {
+          data = await backendRes.json();
+        } catch {
+          return NextResponse.json(
+            { success: false, error: "Authentication service returned an unparseable response." },
+            { status: 502 },
+          );
+        }
 
         if (!backendRes.ok) {
           return NextResponse.json(
@@ -67,14 +76,18 @@ export async function POST(req: NextRequest) {
       } catch (fetchErr: any) {
         console.error(
           "❌ [API /api/auth/login] FastAPI proxy error:",
+          fetchErr?.name,
           fetchErr?.message,
         );
+        const isTimeout = fetchErr?.name === "TimeoutError" || fetchErr?.name === "AbortError";
         return NextResponse.json(
           {
             success: false,
-            error: "Authentication service is unavailable. Please try again.",
+            error: isTimeout
+              ? "Authentication service timed out. Please try again."
+              : "Authentication backend service is currently unreachable. Please ensure the server is running.",
           },
-          { status: 503 },
+          { status: isTimeout ? 504 : 503 },
         );
       }
     }
@@ -149,37 +162,69 @@ export async function POST(req: NextRequest) {
 
     // Proxy wallet verification to FastAPI which verifies signature, nonce, and registered wallet in MongoDB/SQLite
     try {
-      const fastapiVerifyRes = await fetch(
-        `${FASTAPI_URL}/api/auth/verify-wallet`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${tempToken}`,
+      let fastapiVerifyRes: Response;
+      try {
+        fastapiVerifyRes = await fetch(
+          `${FASTAPI_URL}/api/auth/verify-wallet`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${tempToken}`,
+            },
+            body: JSON.stringify({
+              wallet_address: address,
+              message,
+              signature,
+              chain_id: chainId || DEFAULT_CHAIN_ID,
+            }),
+            signal: AbortSignal.timeout(10000),
           },
-          body: JSON.stringify({
-            wallet_address: address,
-            message,
-            signature,
-            chain_id: chainId || DEFAULT_CHAIN_ID,
-          }),
-        },
-      );
+        );
+      } catch (fetchErr: any) {
+        console.error(
+          "❌ [MetaMask proxy → FastAPI verify-wallet] network/timeout error:",
+          fetchErr?.name,
+          fetchErr?.message,
+        );
+        const isTimeout = fetchErr?.name === "TimeoutError" || fetchErr?.name === "AbortError";
+        return NextResponse.json(
+          {
+            success: false,
+            error: isTimeout
+              ? "Wallet verification request timed out. Please try again."
+              : "Authentication backend service is currently unreachable. Please check backend connection.",
+          },
+          { status: isTimeout ? 504 : 503 },
+        );
+      }
 
-      const fastapiData = await fastapiVerifyRes.json().catch(() => ({}));
+      let fastapiData: any = {};
+      try {
+        fastapiData = await fastapiVerifyRes.json();
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Authentication service returned an unparseable response." },
+          { status: 502 },
+        );
+      }
 
       if (fastapiVerifyRes.ok && fastapiData.token) {
-        await SocService.logSecurityEvent({
-          eventType: "AUTH_SUCCESS",
-          severity: "LOW",
-          ipAddress,
-          userAgent,
-          endpoint: "/api/auth/login",
-          details: {
-            authMethod: "METAMASK_SEPOLIA_VERIFIED",
-            walletAddress: address,
-          },
-        });
+        try {
+          await SocService.logSecurityEvent({
+            eventType: "AUTH_SUCCESS",
+            severity: "LOW",
+            ipAddress,
+            userAgent,
+            endpoint: "/api/auth/login",
+            details: {
+              authMethod: "METAMASK_SEPOLIA_VERIFIED",
+              walletAddress: address,
+            },
+          });
+        } catch (logErr: any) {
+          console.warn("Non-blocking SOC event log warning:", logErr?.message);
+        }
 
         const userRole = normalizeRole(
           (fastapiData.user?.role || requestedRole) as Role,
@@ -191,10 +236,6 @@ export async function POST(req: NextRequest) {
           redirectUrl: fastapiData.redirect_url || getRoleDashboard(userRole),
         });
 
-        // NOTE: httpOnly is intentionally false — auth.service.ts also writes these
-        // cookies via document.cookie for middleware routing. Changing to httpOnly:true
-        // here would conflict with the client-side cookie writes. The token is also
-        // stored in localStorage for API calls. In production, add Secure:true.
         const isSecure = process.env.NODE_ENV === "production";
         response.cookies.set("pds_token", fastapiData.token, {
           path: "/",
@@ -225,15 +266,15 @@ export async function POST(req: NextRequest) {
       );
     } catch (proxyErr: any) {
       console.error(
-        "❌ [MetaMask proxy → FastAPI verify-wallet] error:",
+        "❌ [MetaMask proxy → FastAPI verify-wallet] unexpected error:",
         proxyErr?.message,
       );
       return NextResponse.json(
         {
           success: false,
-          error: "Authentication service is unavailable. Please try again.",
+          error: proxyErr?.message || "Authentication processing failed.",
         },
-        { status: 503 },
+        { status: 500 },
       );
     }
   } catch (error: any) {

@@ -54,6 +54,10 @@ export class AuthService {
       );
 
       if (res.data?.success) {
+        const userObj = res.data.user || {};
+        if (!userObj.walletAddress && userObj.wallet_address) {
+          userObj.walletAddress = userObj.wallet_address;
+        }
         // Step 1 alone MUST NOT grant session tokens or cookies!
         return {
           success: true,
@@ -61,7 +65,7 @@ export class AuthService {
           temp_token: res.data.temp_token,
           token: undefined,
           redirect_url: undefined,
-          user: res.data.user,
+          user: userObj,
           message: res.data.message,
         };
       }
@@ -86,13 +90,17 @@ export class AuthService {
           role: canonicalRole,
         });
         if (fallbackRes.data?.success) {
+          const userObj = fallbackRes.data.user || {};
+          if (!userObj.walletAddress && userObj.wallet_address) {
+            userObj.walletAddress = userObj.wallet_address;
+          }
           return {
             success: true,
             requires_metamask: true,
             temp_token: fallbackRes.data.temp_token,
             token: undefined,
             redirect_url: undefined,
-            user: fallbackRes.data.user,
+            user: userObj,
           };
         }
         throw new Error(
@@ -158,14 +166,24 @@ export class AuthService {
       }
       // Network unreachable — try Next.js proxy which also hits Python backend
       const lowerAddress = address.toLowerCase();
-      const fallbackNonce = await axios.get(
-        `/api/auth/nonce?address=${lowerAddress}`,
-        {
-          headers: { Authorization: `Bearer ${tempToken}` },
-          timeout: 10000,
-        },
-      );
-      nonceData = fallbackNonce.data;
+      try {
+        const fallbackNonce = await axios.get(
+          `/api/auth/nonce?address=${lowerAddress}`,
+          {
+            headers: { Authorization: `Bearer ${tempToken}` },
+            timeout: 10000,
+          },
+        );
+        nonceData = fallbackNonce.data;
+      } catch (fbErr: any) {
+        const fbErrDetail =
+          fbErr.response?.data?.error ||
+          fbErr.response?.data?.detail ||
+          fbErr.message;
+        throw new Error(
+          fbErrDetail || "Failed to obtain authentication challenge from server.",
+        );
+      }
     }
 
     if (!nonceData?.success || !nonceData?.nonce) {
