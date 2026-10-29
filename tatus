@@ -1,0 +1,196 @@
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/package-lock.json b/package-lock.json[m
+[1mindex 15dd872..a371955 100644[m
+[1m--- a/package-lock.json[m
+[1m+++ b/package-lock.json[m
+[36m@@ -35,9 +35,21 @@[m
+         "recharts": "^3.10.1",[m
+         "tailwind-merge": "^3.6.0",[m
+         "tailwindcss": "^3.4.19",[m
+[31m-        "typescript": "^7.0.2",[m
+         "zod": "^4.5.4",[m
+         "zustand": "^5.0.15"[m
+[32m+[m[32m      },[m
+[32m+[m[32m      "devDependencies": {[m
+[32m+[m[32m        "@eslint/js": "^10.0.1",[m
+[32m+[m[32m        "@testing-library/react-hooks": "^8.0.0",[m
+[32m+[m[32m        "@types/jest": "^29.0.0",[m
+[32m+[m[32m        "@typescript-eslint/eslint-plugin": "^8.72.0",[m
+[32m+[m[32m        "@typescript-eslint/parser": "^8.72.0",[m
+[32m+[m[32m        "eslint": "^10.13.0",[m
+[32m+[m[32m        "eslint-config-prettier": "^10.1.8",[m
+[32m+[m[32m        "jest": "^29.0.0",[m
+[32m+[m[32m        "strip-comments": "^2.0.1",[m
+[32m+[m[32m        "ts-jest": "^29.0.0",[m
+[32m+[m[32m        "typescript": "5.4"[m
+       }[m
+     },[m
+     "node_modules/@adraffy/ens-normalize": {[m
+[36m@@ -58,2491 +70,5624 @@[m
+         "url": "https://github.com/sponsors/sindresorhus"[m
+       }[m
+     },[m
+[31m-    "node_modules/@emnapi/runtime": {[m
+[31m-      "version": "1.11.3",[m
+[31m-      "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.11.3.tgz",[m
+[31m-      "integrity": "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==",[m
+[32m+[m[32m    "node_modules/@babel/code-frame": {[m
+[32m+[m[32m      "version": "7.29.7",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.29.7.tgz",[m
+[32m+[m[32m      "integrity": "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==",[m
+[32m+[m[32m      "dev": true,[m
+       "license": "MIT",[m
+[31m-      "optional": true,[m
+       "dependencies": {[m
+[31m-        "tslib": "^2.4.0"[m
+[32m+[m[32m        "@babel/helper-validator-identifier": "^7.29.7",[m
+[32m+[m[32m        "js-tokens": "^4.0.0",[m
+[32m+[m[32m        "picocolors": "^1.1.1"[m
+[32m+[m[32m      },[m
+[32m+[m[32m      "engines": {[m
+[32m+[m[32m        "node": ">=6.9.0"[m
+       }[m
+     },[m
+[31m-    "node_modules/@hookform/resolvers": {[m
+[31m-      "version": "5.9.1",[m
+[31m-      "resolved": "https://registry.npmjs.org/@hookform/resolvers/-/resolvers-5.9.1.tgz",[m
+[31m-      "integrity": "sha512-7b7vsbraJxKgjVSA1Nur9tLwj539WGJUBLA7QNvXnFoT2pM5Z7G+6rlukk4B2/QrTZy6huRtH6wKeESPKuIr6w==",[m
+[32m+[m[32m    "node_modules/@babel/compat-data": {[m
+[32m+[m[32m      "version": "7.29.7",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@babel/compat-data/-/compat-data-7.29.7.tgz",[m
+[32m+[m[32m      "integrity": "sha512-locTkQyKvwIEgBzVrn8693ebc97F2U8ZHjbXwDXJ5Fn2TCpNwTlKcaKLkdHop5c/icOFE7qt7Q9JC5hnKNa6Gg==",[m
+[32m+[m[32m      "dev": true,[m
+[32m+[m[32m      "license": "MIT",[m
+[32m+[m[32m      "engines": {[m
+[32m+[m[32m        "node": ">=6.9.0"[m
+[32m+[m[32m      }[m
+[32m+[m[32m    },[m
+[32m+[m[32m    "node_modules/@babel/core": {[m
+[32m+[m[32m      "version": "7.29.7",[m
+[32m+[m[32m      "resolved": "https://registry.npmjs.org/@babel/core/-/core-7.29.7.tgz",[m
+[32m+[m[32m      "integrity": "sha512-RgHBCvtjbOK2gXSNBNIkNoEc9qoVEtau3hj8gEqKQuL3HZAibKarWFEI3Lfm6EYKkLalOh8eSrj9b+ch9H/VBA==",[m
+[32m+[m[32m      "dev": true,[m
+       "license": "MIT",[m
+       "dependencies": {[m
+[31m-        "@standard-schema/utils": "^0.3.0"[m
+[31m-      },[m
+[31m-      "peerDependencies": {[m
+[31m-        "@sinclair/typebox": ">=0.25.24",[m
+[31m-        "@standard-schema/spec": "^1.0.0",[m
+[31m-        "@typeschema/main": ">=0.13.7",[m
+[31m-        "@vinejs/vine": "^2.0.0 || ^3.0.0 || ^4.0.0",[m
+[31m-        "ajv": "^8.12.0",[m
+[31m-        "ajv-errors": "^3.0.0",[m
+[31m-        "ajv-formats": "^2.1.1",[m
+[31m-        "arktype": "^2.0.0",[m
+[31m-        "ata-validator": "^1.2.0",[m
+[31m-        "class-transformer": ">=0.4.0",[m
+[31m-        "class-validator": ">=0.12.0",[m
+[31m-        "computed-types": "^1.0.0",[m
+[31m-        "effect": "^3.10.3",[m
+[31m-        "fluentvalidation-ts": "^3.0.0",[m
+[31m-        "fp-ts": "^2.7.0",[m
+[31m-        "io-ts": "^2.0.0",[m
+[31m-        "joi": "^17.0.0 || ^18.0.0",[m
+[31m-        "nope-validator": ">=0.12.0",[m
+[31m-        "react-hook-form": "^7.55.0",[m
+[31m-        "superstruct": ">=0.12.0",[m
+[31m-        "typanion": "^3.3.2",[m
+[31m-        "valibot": ">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc",[m
+[31m-        "vest": ">=6.0.0",[m
+[31m-        "yup": "^1.0.0",[m
+[31m-        "zod": "^3.25.0 || ^4.0.0"[m
+[32m+[m[32m        "@babel/code-frame": "^7.29.7",[m
+[32m+[m[32m        "@babel/generator": "^7.29.7",[m
+[32m+[m[32m        "@babel/helper-compilation-targets": "^7.29.7",[m
+[32m+[m[32m        "@babel/helper-module-transforms": "^7.29.7",[m
+[32m+[m[32m        "@babel/helpers": "^7.29.7",[m
+[32m+[m[32m        "@babel/parser": "^7.29.7",[m
+[32m+[m[32m        "@babel/template": "^7.29.7",[m
+[32m+[m[32m        "@babel/traverse": "^7.29.7",[m
+[32m+[m[32m        "@babel/types": "^7.29.7",[m
+[32m+[m[32m        "@jridgewell/remapping": "^2.3.5",[m
+[32m+[m[32m        "convert-source-map": "^2.0.0",[m
+[32m+[m[32m        "debug": "^4.1.0",[m
+[32m+[m[32m        "gensync": "^1.0.0-beta.2",[m
+[32m+[m[32m        "json5": "^2.2.3",[m
+[32m+[m[32m        "semver": "^6.3.1"[m
+[32m+[m[32m      },[m
+[32m+[m[32m      "engines": {[m
+[32m+[m[32m        "node": ">=6.9.0"[m
+       },[m
+[31m-      "peerDependenciesMeta": {[m
+[31m-        "@sinclair/typebox": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "@standard-schema/spec": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "@typeschema/main": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "@vinejs/vine": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "ajv": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "ajv-errors": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "ajv-formats": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "arktype": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "ata-validator": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "class-transformer": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "class-validator": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "computed-types": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "effect": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "fluentvalidation-ts": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "fp-ts": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "io-ts": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "joi": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "nope-validator": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "superstruct": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "typanion": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "valibot": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "vest": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "yup": {[m
+[31m-          "optional": true[m
+[31m-        },[m
+[31m-        "zod": {[m
+[31m-          "optional": true[m
+[31m-        }[m
+[32m+[m[32m      "funding": {[m
+[32m+[m[32m        "type": "opencollect
