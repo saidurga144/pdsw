@@ -82,7 +82,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
   // Auth pages: completely standalone, no navbar, no footer, no extra padding — full screen
   if (isAuthPage) {
     return (
-      <div className="w-full h-screen overflow-hidden bg-background font-sans">
+      <div className="min-h-svh w-full overflow-x-hidden bg-background font-sans">
         {children}
       </div>
     );
@@ -93,8 +93,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
     return (
       <div className="min-h-screen flex flex-col bg-background text-foreground font-sans w-full overflow-x-hidden">
         <PublicNavbar />
-        <main className="flex-1 w-full bg-background pt-20 px-2 sm:px-4 lg:px-6">
-          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+        <main
+          className={`flex-1 w-full bg-background ${pathname === "/" ? "pt-0" : "pt-20 px-2 sm:px-4 lg:px-6"}`}
+        >
+          {pathname === "/" ? (
+            children
+          ) : (
+            <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+          )}
         </main>
         <PublicFooter />
       </div>

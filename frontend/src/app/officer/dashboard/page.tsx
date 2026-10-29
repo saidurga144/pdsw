@@ -21,12 +21,11 @@ export default function OfficerDashboard() {
   const [requests, setRequests] = useState<any[]>([]);
   const [beneficiaryCount, setBeneficiaryCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
 
-  const officerName = user?.name || "PDS Field Inspector";
-  const officerId = user?.id
-    ? `OFF-${user.id.slice(-6).toUpperCase()}`
-    : "OFF-HQ";
-  const jurisdiction = user?.jurisdiction || "Assigned Zone";
+  const officerName = user?.name || "Officer dashboard";
+  const officerId = user?.id ? `OFF-${user.id.slice(-6).toUpperCase()}` : null;
+  const jurisdiction = user?.jurisdiction;
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -44,6 +43,7 @@ export default function OfficerDashboard() {
           setRequests(reqRes.value.data.requests);
         } else {
           setRequests([]);
+          setDataError("Modification requests could not be loaded.");
         }
 
         if (
@@ -54,10 +54,12 @@ export default function OfficerDashboard() {
           setBeneficiaryCount(benRes.value.data.beneficiaries.length);
         } else {
           setBeneficiaryCount(0);
+          setDataError((current) => current || "Beneficiary records could not be loaded.");
         }
       } catch {
         setRequests([]);
         setBeneficiaryCount(0);
+        setDataError("Officer dashboard data is unavailable.");
       } finally {
         setLoading(false);
       }
@@ -75,54 +77,53 @@ export default function OfficerDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="bg-secondary text-foreground font-mono text-[11px] px-2.5 py-0.5 rounded border border-border font-bold">
+            {officerId && <span className="bg-white text-foreground font-mono text-xs px-2.5 py-1 border border-border font-semibold">
               {officerId}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {jurisdiction}
-            </span>
+            </span>}
+            {jurisdiction && <span className="text-sm text-muted-foreground">{jurisdiction}</span>}
           </div>
-          <h1 className="text-xl font-bold text-foreground">
-            {officerName} — Operations Dashboard
-          </h1>
+          <p className="eyebrow mb-1">Officer workspace</p>
+          <h1 className="editorial-heading text-3xl text-foreground sm:text-4xl">{officerName}</h1>
         </div>
 
         <div className="flex items-center gap-2">
           <Link
             href="/officer/distribution"
-            className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
+            className="inline-flex min-h-11 items-center justify-center px-4 py-2.5 bg-primary hover:bg-primary-hover text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Release Commodities
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {dataError && <div role="alert" className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{dataError}</div>}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         <StatsCard
-          title="Assigned Jurisdiction"
-          value={beneficiaryCount.toString()}
-          description={`${jurisdiction} (Enrolled)`}
+          title="Beneficiaries returned"
+          value={loading ? "…" : dataError ? "—" : beneficiaryCount.toLocaleString()}
+          description={jurisdiction || "Current officer query result"}
           icon={Users}
           iconBgColor="bg-secondary text-primary border border-border"
         />
         <StatsCard
           title="Pending Modifications"
-          value={pendingRequests.length.toString()}
-          description="Citizen diff review required"
+          value={loading ? "…" : dataError ? "—" : pendingRequests.length.toString()}
+          description="Submitted or pending requests returned"
           icon={Send}
           iconBgColor="bg-secondary text-primary border border-border"
         />
         <StatsCard
           title="Flagged Risk Alerts"
-          value="0"
-          description="AI Anomaly Engine flags"
+          value="—"
+          description="No officer-visible risk feed configured"
           icon={AlertTriangle}
           iconBgColor="bg-secondary text-primary border border-border"
         />
         <StatsCard
           title="Today's Release Txns"
-          value="0"
-          description="Biometric verified"
+          value="—"
+          description="Release totals are not included in this summary"
           icon={Building2}
           iconBgColor="bg-secondary text-primary border border-border"
         />
@@ -130,7 +131,7 @@ export default function OfficerDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card border border-border rounded-md p-5 shadow-subtle space-y-4">
+          <div className="bg-white border border-border p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h2 className="font-bold text-sm text-foreground flex items-center gap-2">
                 <Send className="size-4 text-primary" /> Pending Modification
@@ -163,7 +164,7 @@ export default function OfficerDashboard() {
                 {pendingRequests.map((req) => (
                   <div
                     key={req.id}
-                    className="bg-muted/40 p-4 rounded-md border border-border space-y-3"
+                    className="bg-background p-4 border border-border space-y-3"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -174,20 +175,14 @@ export default function OfficerDashboard() {
                           {req.beneficiary_id || "Citizen Request"}
                         </h3>
                       </div>
-                      <RiskIndicator
-                        score={req.ai_risk_score || 5}
-                        level="LOW"
-                      />
+                      {Number.isFinite(Number(req.ai_risk_score)) && req.ai_risk_score !== undefined && <RiskIndicator score={Number(req.ai_risk_score)} level={req.ai_risk_level || "LOW"} />}
                     </div>
 
                     <div className="text-xs text-foreground bg-card p-2.5 rounded border border-border">
                       <span className="text-[10px] font-bold text-muted-foreground block uppercase">
                         Request Type:
                       </span>
-                      <span>
-                        {req.request_type} •{" "}
-                        {req.reason || "Citizen online self-service request"}
-                      </span>
+                      <span>{req.request_type}{req.reason ? ` • ${req.reason}` : ""}</span>
                     </div>
 
                     <div className="flex justify-end gap-2 pt-1">
@@ -206,7 +201,7 @@ export default function OfficerDashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-card border border-border rounded-md p-5 shadow-subtle space-y-4">
+          <div className="bg-white border border-border p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h2 className="font-bold text-sm text-foreground flex items-center gap-2">
                 <AlertTriangle className="size-4 text-primary" /> Field Risk
@@ -225,11 +220,10 @@ export default function OfficerDashboard() {
                 <CheckCircle className="size-5" />
               </div>
               <p className="text-xs font-semibold text-foreground">
-                Zero Risk Anomalies
+                Risk feed unavailable
               </p>
               <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                All commodity distribution patterns and citizen telemetry are
-                operating within normal baseline limits.
+                No officer-visible risk alert data source is connected to this dashboard.
               </p>
             </div>
           </div>

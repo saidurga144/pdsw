@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
 import { useNotificationStore } from "@/stores/notification.store";
 import { useUIStore } from "@/stores/ui.store";
-import { Search, Bell, Menu, Shield, LogOut } from "lucide-react";
+import { Search, Bell, Menu, LogOut } from "lucide-react";
 import Link from "next/link";
+import { normalizeRole } from "@/lib/role-utils";
 
 export const HeaderNavbar: React.FC = () => {
   const router = useRouter();
@@ -14,10 +15,13 @@ export const HeaderNavbar: React.FC = () => {
   const { unreadCount } = useNotificationStore();
   const { toggleSidebar, setSearchOpen } = useUIStore();
 
-  const notificationHref =
-    role === "BENEFICIARY"
-      ? "/beneficiary/notifications"
-      : `/${role.toLowerCase()}/dashboard`;
+  const notificationHrefByRole: Record<string, string> = {
+    BENEFICIARY: "/beneficiary/notifications",
+    PDS_OFFICER: "/officer/dashboard",
+    ADMIN: "/admin/dashboard",
+    SOC_ANALYST: "/soc/dashboard",
+  };
+  const notificationHref = notificationHrefByRole[normalizeRole(role || "")] || "/";
 
   const handleLogout = async () => {
     await logout();
@@ -25,12 +29,12 @@ export const HeaderNavbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/80 bg-background/90 text-foreground shadow-2xl shadow-black/20 backdrop-blur-xl">
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-6">
+    <header className="sticky top-0 z-30 border-b border-border bg-white/95 text-foreground backdrop-blur-md">
+      <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-2.5 md:px-6">
         <div className="flex items-center gap-3">
           <button
             onClick={toggleSidebar}
-            className="rounded-full border border-border p-2 text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+            className="rounded-md border border-border p-2 text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="Toggle Sidebar"
           >
             <Menu className="w-5 h-5" />
@@ -40,7 +44,7 @@ export const HeaderNavbar: React.FC = () => {
             href="/"
             className="flex items-center gap-2.5 font-bold tracking-tight text-foreground"
           >
-            <div className="relative flex size-8 items-center justify-center overflow-hidden rounded-xl border border-primary/50 bg-card shadow-subtle">
+            <div className="relative flex size-9 items-center justify-center overflow-hidden rounded-md border border-border bg-white">
               <img
                 src="/logo.png"
                 alt="PDSW Logo"
@@ -48,7 +52,7 @@ export const HeaderNavbar: React.FC = () => {
               />
             </div>
             <div className="hidden sm:block">
-              <span className="display-type block text-base font-bold text-foreground uppercase tracking-wider leading-none">
+              <span className="block text-sm font-semibold tracking-tight text-foreground leading-none">
                 PDS Welfare Platform
               </span>
             </div>
@@ -58,7 +62,7 @@ export const HeaderNavbar: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-primary/10"
+            className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Search className="w-3.5 h-3.5 text-primary" />
             <span className="hidden sm:inline">Search...</span>
@@ -69,7 +73,7 @@ export const HeaderNavbar: React.FC = () => {
 
           <Link
             href={notificationHref}
-            className="relative rounded-full p-2 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            className="relative rounded-md p-2 text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
@@ -77,10 +81,10 @@ export const HeaderNavbar: React.FC = () => {
             )}
           </Link>
 
-          <div className="h-5 w-px bg-border mx-1" />
+          <div className="h-6 w-px bg-border mx-1" />
 
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-xs font-bold text-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-secondary text-xs font-semibold text-foreground">
               {user?.name?.substring(0, 2).toUpperCase() || "0x"}
             </div>
             <div className="hidden xl:block text-left">
@@ -101,7 +105,7 @@ export const HeaderNavbar: React.FC = () => {
 
           <button
             onClick={handleLogout}
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="Sign Out"
           >
             <LogOut className="w-4 h-4" />

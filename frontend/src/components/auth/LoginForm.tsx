@@ -625,44 +625,47 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
 
   /* ── Render ──────────────────────────────────────────────────────── */
   return (
-    <>
-      <div
-        className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden"
-        style={{ backgroundColor: "#f4f7fb" }}
-      >
+    <div className="auth-page relative min-h-svh w-full lg:grid lg:grid-cols-2">
+      <section className="auth-showcase relative hidden min-h-svh overflow-hidden p-12 lg:flex lg:flex-col lg:justify-between xl:p-16">
+        <img src="/images/hero.png" alt="Public distribution shop" className="absolute inset-0 size-full object-cover opacity-35" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#111D28] via-[#111D28]/95 to-[#111D28]/70" />
+        <Link href="/" className="relative z-10 flex items-center gap-3" aria-label="PDS Welfare Platform home">
+          <span className="flex size-12 items-center justify-center overflow-hidden rounded-md bg-white"><img src="/logo.png" alt="PDSW logo" className="size-11 object-contain" /></span>
+          <span><span className="block text-sm font-semibold">PDS Welfare Platform</span><span className="mt-0.5 block text-xs text-white/75">Public distribution services</span></span>
+        </Link>
+        <div className="relative z-10 max-w-xl py-14">
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-300">Secure role-based access</p>
+          <h2 className="editorial-heading text-5xl leading-[1.05] text-white xl:text-6xl">Services and records, in one place.</h2>
+          <p className="mt-6 max-w-lg text-base leading-7 text-white/75">Sign in to access the beneficiary, officer, or administration tools assigned to your account.</p>
+        </div>
+        <p className="relative z-10 text-xs text-white/60">PDS Welfare Platform</p>
+      </section>
+      <main className="relative flex min-h-svh items-center justify-center px-4 py-16 sm:px-8">
         {/* Back to home */}
         <Link
           href="/"
-          className="absolute top-6 left-6 flex items-center justify-center w-9 h-9 rounded-full bg-white shadow-sm text-slate-500 hover:text-slate-800 hover:bg-sky-50 hover:shadow-md transition-all"
+          className="absolute left-4 top-4 flex size-10 items-center justify-center border border-border bg-white text-slate-500 transition-colors hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:left-8 sm:top-8"
           aria-label="Back to home"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
 
-        <div className="w-full max-w-[400px] px-4 flex flex-col items-center gap-5">
+        <div className="w-full max-w-[440px] flex flex-col items-center gap-5">
           {/* Logo */}
           <div
-            className="flex items-center justify-center rounded-full border border-slate-100 shadow-sm"
-            style={{ width: 88, height: 88, backgroundColor: "#ffffff" }}
+            className="flex size-[76px] items-center justify-center rounded-full border border-border bg-white"
           >
             <img
               src="/logo.png"
               alt="PDSW"
-              className="object-contain w-16 h-16"
+              className="size-[66px] object-contain"
             />
           </div>
 
           {/* Heading */}
           <div className="text-center">
             <h1
-              className="login-display !text-[#0f2742] text-[28px] font-normal"
-              style={{
-                color: "#0f2742",
-                opacity: 1,
-                WebkitTextFillColor: "#0f2742",
-                filter: "none",
-                textShadow: "none",
-              }}
+              className="login-display editorial-heading text-3xl font-normal text-[#111D28] sm:text-4xl"
             >
               Welcome Back
             </h1>
@@ -677,7 +680,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
               <div
                 className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
                   currentPhase === "PHASE_1"
-                    ? "bg-[#6c91bd] text-white"
+                    ? "bg-primary text-white"
                     : "bg-[#65b87a] text-white"
                 }`}
               >
@@ -698,7 +701,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
               <div
                 className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
                   currentPhase === "PHASE_2"
-                    ? "bg-[#cf9362] text-white"
+                    ? "bg-primary text-white"
                     : "bg-slate-200 text-slate-400"
                 }`}
               >
@@ -831,7 +834,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-full bg-[#6c91bd] hover:bg-[#587fae] text-white font-bold text-sm transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full min-h-12 py-3 rounded-sm bg-primary hover:bg-primary-hover text-white font-semibold text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {isLoading ? (
                   <>
@@ -924,7 +927,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
                 onClick={handlePhaseTwoMetaMask}
                 disabled={phase2Busy}
                 aria-label="Connect and sign with MetaMask"
-                className="w-full py-3 rounded-full bg-[#cf9362] hover:bg-[#b97d4c] text-white font-bold text-sm transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2.5"
+                className="w-full min-h-12 py-3 rounded-sm bg-primary hover:bg-primary-hover text-white font-semibold text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {phase2Busy ? (
                   <>
@@ -960,7 +963,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
             © 2026 PDS Welfare Platform
           </p>
         </div>
-      </div>
+      </main>
 
       {/* ══ ROLE MODAL ══ */}
       {showRoleModal && (
@@ -1039,6 +1042,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initialRole }) => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };

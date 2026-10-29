@@ -385,31 +385,24 @@ export class ServerAdminService {
       headers.Authorization = `Bearer ${token}`;
     }
 
+    let res: Response;
     try {
-      const res = await fetch(`${FASTAPI_URL}/api/auth/stats`, {
+      res = await fetch(`${FASTAPI_URL}/api/auth/stats`, {
         method: "GET",
         headers,
         cache: "no-store",
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.stats) {
-          return data.stats;
-        }
-      }
     } catch {
-      // Backend unavailable
+      throw new ProvisionError("Unable to reach the authentication backend for platform statistics.", 503);
     }
 
-    return {
-      totalUsers: 0,
-      admins: 0,
-      pdsOfficers: 0,
-      socAnalysts: 0,
-      beneficiaries: 0,
-      pendingRequests: 0,
-      totalDistributions: 0,
-      totalAuditEvents: 0,
-    };
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.stats) {
+      throw new ProvisionError(
+        data.detail || data.error || `Platform statistics are unavailable (HTTP ${res.status}).`,
+        res.ok ? 503 : res.status,
+      );
+    }
+    return data.stats;
   }
 }

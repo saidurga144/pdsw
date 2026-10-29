@@ -1,116 +1,39 @@
 "use client";
 
 import React from "react";
-import { Users, Truck, ShieldCheck } from "lucide-react";
+import { Building2, Cpu, FileCheck2, ShieldCheck, Users, WalletCards } from "lucide-react";
 
-const SERVICES = [
-  {
-    icon: Users,
-    title: "Beneficiary Management",
-    description:
-      "Manage beneficiary details, family members, entitlements, and account information securely.",
-  },
-  {
-    icon: Truck,
-    title: "PDS Distribution",
-    description:
-      "Manage commodity distribution, verify beneficiaries, and maintain accurate distribution records and receipts.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Secure & Transparent System",
-    description:
-      "Protect user data with secure authentication, blockchain verification, and transparent transaction records.",
-  },
+const capabilities = [
+  { icon: Users, title: "Beneficiary services", description: "View profile details, family information, eligibility, requests, and distribution records." },
+  { icon: FileCheck2, title: "Verification workflows", description: "Review submitted beneficiary information and change requests through officer tools." },
+  { icon: Building2, title: "Distribution operations", description: "Record commodity releases and manage the operational steps available to officers." },
+  { icon: ShieldCheck, title: "Integrity checks", description: "Inspect record verification results and related evidence in supported workflows." },
+  { icon: WalletCards, title: "Wallet sign-in", description: "Complete the configured wallet verification step after account sign-in where required." },
+  { icon: Cpu, title: "Risk review tools", description: "Use available AI-assisted analysis screens to inspect flagged records and security signals." },
 ];
 
-export const OurServices: React.FC = () => {
-  return (
-    <section
-      id="services"
-      className="border-t border-border scroll-mt-20"
-      style={{
-        backgroundColor: "#f5f8f5",
-        paddingTop: "clamp(3rem, 6vw, 5rem)",
-        paddingBottom: "clamp(3rem, 6vw, 5rem)",
-      }}
-    >
-      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-10">
-        {/* ── Section heading ── */}
-        <div className="text-center mb-12">
-          <h2
-            className="font-bold text-foreground"
-            style={{
-              fontSize: "clamp(1.6rem, 3vw, 2.25rem)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Our Services
-          </h2>
+export const OurServices: React.FC = () => (
+  <section id="services" className="scroll-mt-16 bg-white px-5 py-20 sm:px-8 sm:py-28 lg:px-10">
+    <div className="mx-auto max-w-[1280px]">
+      <div className="mb-12 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="eyebrow mb-4">Platform capabilities</p>
+          <h2 className="editorial-heading max-w-2xl text-4xl leading-tight text-foreground sm:text-5xl">Tools for each step of distribution.</h2>
         </div>
-
-        {/* ── Cards grid ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {SERVICES.map((svc, i) => {
-            const Icon = svc.icon;
-            const isMiddle = i === 1;
-
-            return (
-              <div
-                key={svc.title}
-                className={`
-                  group flex flex-col items-center text-center rounded-2xl bg-white px-8 py-10 transition-all duration-200
-                  ${
-                    isMiddle
-                      ? "shadow-lg ring-1 ring-border scale-[1.02]"
-                      : "shadow-sm border border-border hover:shadow-md hover:-translate-y-0.5"
-                  }
-                `}
-              >
-                {/* Icon circle */}
-                <div
-                  className="flex items-center justify-center rounded-full mb-7 transition-colors duration-200 group-hover:bg-primary/15"
-                  style={{
-                    width: 72,
-                    height: 72,
-                    backgroundColor: isMiddle
-                      ? "rgba(239,51,64,0.12)"
-                      : "rgba(239,51,64,0.08)",
-                  }}
-                >
-                  <Icon
-                    className="text-primary"
-                    style={{ width: 30, height: 30 }}
-                    strokeWidth={1.8}
-                  />
-                </div>
-
-                {/* Title */}
-                <h3
-                  className="font-bold text-foreground mb-3"
-                  style={{
-                    fontSize: "clamp(1rem, 1.5vw, 1.15rem)",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {svc.title}
-                </h3>
-
-                {/* Description */}
-                <p
-                  className="text-muted-foreground leading-relaxed"
-                  style={{
-                    fontSize: "clamp(0.82rem, 1vw, 0.92rem)",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  {svc.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+        <p className="max-w-lg text-sm leading-7 text-muted-foreground">Capabilities are presented according to the application’s existing role-based workflows.</p>
       </div>
-    </section>
-  );
-};
+      <div className="grid border-l border-t border-border sm:grid-cols-2 lg:grid-cols-3">
+        {capabilities.map(({ icon: Icon, title, description }, index) => (
+          <article key={title} className="group min-h-52 border-b border-r border-border p-6 transition-colors hover:bg-[#F8F8F6] sm:p-7 lg:p-8">
+            <div className="mb-8 flex items-center justify-between">
+              <Icon className="size-5 text-primary" strokeWidth={1.8} aria-hidden="true" />
+              <span className="font-mono text-xs text-muted-foreground">0{index + 1}</span>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
+            <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+);

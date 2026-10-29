@@ -14,89 +14,11 @@
 import { create } from "zustand";
 import { Beneficiary, User } from "@/types";
 import { apiClient } from "@/services/api/client";
-import { normalizeRole } from "@/lib/role-utils";
 
 /** Cache TTL for profile data (5 minutes) */
 export const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 /** Interval for automatic background refresh (5 minutes) */
 export const CACHE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-
-/** Builds a fallback profile from the auth user object (no network required) */
-function buildFallbackProfile(user: User): Beneficiary {
-  const benId =
-    (user as any).beneficiaryId || `ben-${user.id.replace(/^usr-/, "")}`;
-  const district = user.jurisdiction?.split(",")[0]?.trim() || "South Delhi";
-  const state = user.jurisdiction?.split(",")[1]?.trim() || "Delhi";
-
-  return {
-    id: benId,
-    rationCardId: `RC-${user.id.slice(-6).toUpperCase()}`,
-    fullName: user.name || "Citizen User",
-    phone: user.phone || "+91 98765 43210",
-    address: {
-      doorNo: "H-42",
-      street: "Block B, Sector 4",
-      district,
-      state,
-      pincode: "110016",
-      pdsCenterId: `FPS-${district.slice(0, 3).toUpperCase()}-102`,
-      pdsCenterName: `Fair Price Shop #102, ${district}`,
-    },
-    rationCategory: "PHH",
-    familyCount: 1,
-    familyMembers: [
-      {
-        id: `fm-${user.id}-1`,
-        beneficiaryId: benId,
-        fullName: user.name || "Citizen User",
-        relationship: "HEAD",
-        age: 35,
-        gender: "MALE",
-        uidHash: `0x${user.id.slice(-8)}`,
-        verificationStatus: "VERIFIED",
-        addedAt: new Date().toISOString(),
-      },
-    ],
-    eligibility: {
-      beneficiaryId: benId,
-      category: "PHH",
-      monthlyEntitlements: [
-        {
-          commodity: "Rice (Fortified)",
-          quantity: 20,
-          unit: "KG",
-          subsidizedPricePerUnit: 3.0,
-        },
-        {
-          commodity: "Wheat (Whole Grain)",
-          quantity: 15,
-          unit: "KG",
-          subsidizedPricePerUnit: 2.0,
-        },
-        {
-          commodity: "Refined Sugar",
-          quantity: 2,
-          unit: "KG",
-          subsidizedPricePerUnit: 13.5,
-        },
-      ],
-      monthlyIncome: 10000,
-      isBPL: true,
-      lastReviewedAt: new Date().toISOString(),
-      nextReviewDue: new Date(
-        Date.now() + 365 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      status: "ELIGIBLE",
-    },
-    verificationStatus: "VERIFIED",
-    riskScore: 6,
-    riskLevel: "LOW",
-    currentHash: `0x${user.id.slice(-12)}`,
-    latestIPFSCid: `Qm${user.id.slice(-16)}`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
 
 /** State interface for the Beneficiary store */
 export interface BeneficiaryStoreState {
@@ -113,7 +35,7 @@ export interface BeneficiaryStoreState {
    * Ensures the profile is loaded. If already cached and fresh, returns
    * immediately without any network request. If stale or missing, fetches.
    *
-   * @param user - The authenticated user from auth.store (used for fallback)
+   * @param user - Authenticated user (retained for API compatibility)
    */
   ensureLoaded: (user: User | null) => Promise<void>;
 
@@ -151,7 +73,7 @@ export const useBeneficiaryStore = create<BeneficiaryStoreState>((set, get) => {
     error: undefined,
 
     /** Load profile if needed. Handles TTL and concurrent loads. */
-    ensureLoaded: async (user: User | null) => {
+    ensureLoaded: async (_user: User | null) => {
       const { profile, isLoading, lastFetchedAt } = get();
       const isFresh =
         profile !== null &&
@@ -175,17 +97,7 @@ export const useBeneficiaryStore = create<BeneficiaryStoreState>((set, get) => {
       } catch (e: any) {
         set({ error: e?.message || "Failed to fetch profile" });
       }
-      if (user) {
-        set({
-          profile: buildFallbackProfile(user),
-          isLoading: false,
-          lastFetchedAt: Date.now(),
-          error: undefined,
-        });
-        startRefreshTimer();
-      } else {
-        set({ isLoading: false });
-      }
+      set({ isLoading: false, error: get().error || "Beneficiary profile is unavailable." });
     },
 
     clearProfile: () => {
@@ -199,7 +111,7 @@ export const useBeneficiaryStore = create<BeneficiaryStoreState>((set, get) => {
     },
 
     /** Force a fresh fetch, optionally using a fallback user. */
-    refresh: async (user: User | null) => {
+    refresh: async (_user: User | null) => {
       set({ isLoading: true, error: undefined });
       try {
         const res = await apiClient.get("/beneficiary/profile");
@@ -215,16 +127,7 @@ export const useBeneficiaryStore = create<BeneficiaryStoreState>((set, get) => {
       } catch (e: any) {
         set({ error: e?.message || "Failed to refresh profile" });
       }
-      if (user) {
-        set({
-          profile: buildFallbackProfile(user),
-          isLoading: false,
-          lastFetchedAt: Date.now(),
-          error: undefined,
-        });
-      } else {
-        set({ isLoading: false });
-      }
+      set({ isLoading: false, error: get().error || "Beneficiary profile is unavailable." });
     },
   };
 });

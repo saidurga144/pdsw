@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Beneficiary } from "@/types";
 import { useAuthStore } from "@/stores/auth.store";
 import { useBeneficiaryStore } from "@/stores/beneficiary.store";
 import { StatsCard } from "@/components/dashboard/StatsCard";
@@ -22,7 +21,9 @@ export default function BeneficiaryDashboard() {
   const {
     profile: beneficiary,
     isLoading: loading,
+    error,
     ensureLoaded,
+    refresh,
   } = useBeneficiaryStore();
 
   // Ensures profile is loaded — no-op if already cached and fresh
@@ -34,71 +35,35 @@ export default function BeneficiaryDashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] space-y-3">
         <Loader2 className="size-8 text-primary animate-spin" />
-        <p className="text-xs text-muted-foreground font-mono">
-          Loading citizen command dashboard...
+        <p className="text-sm text-muted-foreground">
+          Loading your beneficiary profile…
         </p>
       </div>
     );
   }
 
-  const ben = beneficiary || {
-    id: user?.id || "BEN-USER",
-    rationCardId: `RC-${user?.id?.slice(-6).toUpperCase() || "DEL-101"}`,
-    fullName: user?.name || "Authenticated Citizen",
-    phone: user?.phone || "+91 98000 00000",
-    address: {
-      doorNo: "H-42",
-      street: "Block B, Sector 4",
-      district: user?.jurisdiction?.split(",")[0]?.trim() || "South Delhi",
-      state: user?.jurisdiction?.split(",")[1]?.trim() || "Delhi",
-      pincode: "110016",
-      pdsCenterId: "FPS-DEL-102",
-      pdsCenterName: `Fair Price Shop #102, ${user?.jurisdiction || "South Delhi"}`,
-    },
-    rationCategory: "PHH" as const,
-    familyCount: 1,
-    familyMembers: [],
-    verificationStatus: "VERIFIED" as const,
-    riskScore: 5,
-    riskLevel: "LOW" as const,
-    currentHash: "0x000",
-    latestIPFSCid: "Qm000",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    eligibility: {
-      beneficiaryId: user?.id || "BEN-USER",
-      category: "PHH" as const,
-      monthlyEntitlements: [
-        {
-          commodity: "Rice (Fortified)",
-          quantity: 20,
-          unit: "KG",
-          subsidizedPricePerUnit: 3.0,
-        },
-        {
-          commodity: "Wheat (Whole Grain)",
-          quantity: 15,
-          unit: "KG",
-          subsidizedPricePerUnit: 2.0,
-        },
-        {
-          commodity: "Refined Sugar",
-          quantity: 2,
-          unit: "KG",
-          subsidizedPricePerUnit: 13.5,
-        },
-      ],
-      monthlyIncome: 10000,
-      isBPL: true,
-      lastReviewedAt: new Date().toISOString(),
-      nextReviewDue: new Date().toISOString(),
-      status: "ELIGIBLE" as const,
-    },
-  };
+  if (!beneficiary) {
+    return (
+      <section className="mx-auto flex min-h-[420px] max-w-2xl flex-col items-center justify-center border border-border bg-white px-6 py-12 text-center">
+        <div className="mb-5 flex size-12 items-center justify-center rounded-full border border-border bg-background">
+          <FileCheck className="size-5 text-primary" />
+        </div>
+        <h1 className="editorial-heading text-2xl text-foreground">Beneficiary profile unavailable</h1>
+        <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
+          {error || "Your profile could not be loaded from the service. Please try again shortly."}
+        </p>
+        <button onClick={() => refresh(user)} className="mt-6 min-h-11 bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Try again
+        </button>
+      </section>
+    );
+  }
+
+  const ben = beneficiary;
 
   return (
     <div className="space-y-6">
-      <div className="bg-card border border-border rounded-md p-5 md:p-6 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-border p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-secondary text-primary font-mono text-[11px] px-2.5 py-0.5 rounded border border-border font-bold">
@@ -165,7 +130,7 @@ export default function BeneficiaryDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
+        <div className="lg:col-span-2 bg-white border border-border p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
               <h2 className="ben-section-title text-foreground">
@@ -214,7 +179,7 @@ export default function BeneficiaryDashboard() {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle flex flex-col justify-between">
+        <div className="bg-white border border-border p-5 space-y-4 flex flex-col justify-between">
           <div className="space-y-3">
             <h2 className="ben-section-title text-foreground border-b border-border pb-3">
               Citizen Self-Service Actions

@@ -24,30 +24,30 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   iconColor = "text-primary",
 }) => {
   return (
-    <div className="group border-b border-border bg-card/70 p-4 sm:p-5 transition-all hover:bg-card hover:border-primary/60 min-w-0">
+    <div className="group min-w-0 border border-border bg-white p-4 sm:p-5 transition-colors hover:border-primary/50">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="eyebrow text-[9px] truncate">{title}</p>
-          <p className="display-type mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground truncate">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground truncate">{title}</p>
+          <p className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-foreground truncate">
             {value}
           </p>
         </div>
         <div
           className={clsx(
-            "flex size-10 shrink-0 items-center justify-center rounded-full border border-border transition-colors group-hover:border-primary",
+            "flex size-9 shrink-0 items-center justify-center rounded-full border border-border transition-colors group-hover:border-primary",
             iconBgColor,
           )}
         >
-          <Icon className={clsx("w-5 h-5", iconColor)} />
+          <Icon className={clsx("w-[18px] h-[18px]", iconColor)} />
         </div>
       </div>
 
       {(description || change) && (
-        <div className="mt-3 flex items-center gap-2 text-xs">
+        <div className="mt-3 flex items-center gap-2 text-[13px]">
           {change && (
             <span
               className={clsx(
-                "font-semibold px-1.5 py-0.5 rounded border text-[11px]",
+                "font-semibold px-1.5 py-0.5 rounded-sm border text-xs",
                 changeType === "positive" &&
                   "bg-secondary text-foreground border-border",
                 changeType === "negative" &&

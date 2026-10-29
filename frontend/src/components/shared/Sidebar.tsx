@@ -138,7 +138,6 @@ export const Sidebar: React.FC = () => {
       icon: LayoutDashboard,
     },
     { href: "/soc/events", label: "Security Event Logs", icon: ShieldAlert },
-    { href: "/soc/incidents", label: "Cyber Incidents", icon: AlertTriangle },
     { href: "/soc/cyber-ai", label: "Cyber Anomaly Analytics", icon: Cpu },
   ];
 
@@ -162,7 +161,7 @@ export const Sidebar: React.FC = () => {
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
-        <aside className="relative w-72 max-w-[85vw] flex flex-col border-r border-border bg-card text-foreground shadow-2xl z-10 h-full">
+        <aside className="relative w-72 max-w-[85vw] flex flex-col border-r border-border bg-white text-foreground shadow-xl z-10 h-full">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <span className="eyebrow text-[10px]">Portal Navigation</span>
             <button
@@ -185,10 +184,10 @@ export const Sidebar: React.FC = () => {
                   href={route.href}
                   onClick={() => setSidebarOpen(false)}
                   className={clsx(
-                    "flex items-center gap-2.5 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 rounded-md border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     isActive
-                      ? "border-primary bg-primary/10 font-semibold text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                      ? "border-primary bg-primary/5 font-semibold text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
                   )}
                 >
                   <Icon
@@ -215,7 +214,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden md:flex md:flex-col w-64 shrink-0 border-r border-border bg-card/70 text-foreground backdrop-blur-sm min-h-[calc(100vh-57px)]">
+      <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-border bg-white text-foreground min-h-[calc(100vh-64px)]">
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto text-xs pt-4">
           <div className="eyebrow px-3 py-1.5 text-[9px]">
             Portal Navigation
@@ -229,10 +228,10 @@ export const Sidebar: React.FC = () => {
                 key={route.href}
                 href={route.href}
                 className={clsx(
-                  "flex items-center gap-2.5 rounded-lg border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-2.5 rounded-md border-l-2 border-transparent px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   isActive
-                    ? "border-primary bg-primary/10 font-semibold text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                    ? "border-primary bg-primary/5 font-semibold text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
                 )}
               >
                 <Icon

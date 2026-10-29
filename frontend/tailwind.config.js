@@ -10,20 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: [
-          "var(--font-primary)",
-          "Inter",
-          "system-ui",
-          "-apple-system",
-          "sans-serif",
-        ],
-        mono: [
-          "var(--font-primary)",
-          "Inter",
-          "system-ui",
-          "-apple-system",
-          "sans-serif",
-        ],
+        sans: ["var(--font-primary)", "Inter", "system-ui", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -34,13 +22,13 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          hover: "#5A7362",
-          light: "#EDF2ED",
+          hover: "#D96516",
+          light: "#FFF1E8",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
-          hover: "#B8C6AF",
+          hover: "#E9E5DC",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -60,117 +48,114 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Sage Garden specific tokens
         sage: {
-          50: "#F9F9F7", // Background Soft Off-White
-          100: "#F4F4F1", // Light surface / card sub-surface
-          200: "#E8E7E3", // Muted Warm Light Grey
-          300: "#E5E5E0", // Border Light Neutral Grey
-          400: "#C8D4C0", // Secondary Soft Sage / Light Olive
-          500: "#B5C2B4", // Accent Desaturated Grey-Green
-          600: "#6F8A77", // Primary Muted Sage Green
-          700: "#5A7362", // Primary Dark / Hover
-          800: "#4D5950", // Text Secondary / Muted Slate Grey
-          900: "#1E2621", // Text Primary / Deep Charcoal
-          950: "#141A16", // Deep Slate
+          50: "#F8F8F6",
+          100: "#F3F0E9",
+          200: "#E8E7E3",
+          300: "#DEDFDB",
+          400: "#D7B899",
+          500: "#F47721",
+          600: "#D96516",
+          700: "#B94F0A",
+          800: "#4A5158",
+          900: "#111318",
+          950: "#111D28",
         },
-        // Harmonize all Tailwind utility shades to strictly follow Sage Garden with crisp contrast
+        // Existing portal utility classes were authored for a light UI. Keep
+        // their semantic contrast while aligning the accent with PDSW orange.
         slate: {
-          50: "#141A16",
-          100: "#141A16", // Deepest heading text
-          200: "#1E2621", // Primary heading text
-          300: "#2A352E", // Strong text
-          400: "#4A574E", // High-contrast muted supporting text
-          500: "#606E64", // Subtle captions
-          600: "#B5C2B4", // Accent
-          700: "#D9D9D3", // Input border
-          800: "#E5E5E0", // Card border / divider
-          850: "#F4F4F1", // Card sub-surface
-          900: "#FFFFFF", // Card clean white
-          950: "#F9F9F7", // Application background
+          50: "#111318",
+          100: "#111318",
+          200: "#26323B",
+          300: "#3F4B56",
+          400: "#515E6B",
+          500: "#65717E",
+          600: "#818B94",
+          700: "#D5D7D3",
+          800: "#DEDFDB",
+          850: "#F3F0E9",
+          900: "#FFFFFF",
+          950: "#F8F8F6",
         },
-        // Re-route legacy accent names strictly to Sage Garden palette with crisp legibility
         cyan: {
-          50: "#F4F7F4",
-          100: "#EDF2ED",
-          200: "#DCE5DC",
-          300: "#445B4B", // High contrast sage text
-          400: "#3D5243", // High contrast sage text
-          500: "#6F8A77", // Primary button fill
-          600: "#5A7362",
-          700: "#445B4B",
-          800: "#304135",
-          900: "#1E2621",
-          950: "#F4F4F1",
+          50: "#FFF8F2",
+          100: "#FFF1E8",
+          200: "#FCE1CF",
+          300: "#A84B0B",
+          400: "#974206",
+          500: "#F47721",
+          600: "#D96516",
+          700: "#A84B0B",
+          800: "#713808",
+          900: "#4A2A14",
+          950: "#F8F8F6",
         },
         emerald: {
-          50: "#F4F7F4",
-          100: "#EDF2ED",
-          200: "#DCE5DC",
-          300: "#445B4B",
-          400: "#3D5243",
-          500: "#6F8A77",
-          600: "#5A7362",
-          700: "#445B4B",
-          800: "#304135",
-          900: "#1E2621",
-          950: "#F4F4F1",
+          50: "#F0F8F2",
+          100: "#E0F0E5",
+          200: "#C7E3D1",
+          300: "#35694A",
+          400: "#28613E",
+          500: "#2F855A",
+          600: "#267349",
+          700: "#205F3C",
+          800: "#18492F",
+          900: "#163B29",
+          950: "#F3F8F4",
         },
         indigo: {
-          50: "#F4F7F4",
-          100: "#EDF2ED",
-          200: "#DCE5DC",
-          300: "#445B4B",
-          400: "#3D5243",
-          500: "#6F8A77",
-          600: "#5A7362",
-          700: "#445B4B",
-          800: "#304135",
-          900: "#1E2621",
-          950: "#F4F4F1",
+          50: "#F5F7FB",
+          100: "#E8EDF6",
+          200: "#D0D9EA",
+          300: "#405985",
+          400: "#354F7D",
+          500: "#405985",
+          600: "#344B73",
+          700: "#2B3E61",
+          800: "#24344F",
+          900: "#1F2C41",
+          950: "#F5F7FB",
         },
         amber: {
-          50: "#FDFBF7",
-          100: "#F9F5EC",
-          200: "#F2E8D4",
-          300: "#C8D4C0",
-          400: "#52432D",
-          500: "#52432D",
-          600: "#423623",
-          700: "#302618",
-          800: "#1E2621",
-          900: "#1E2621",
-          950: "#F4F4F1",
+          50: "#FFF8E8",
+          100: "#FCEFCF",
+          200: "#F4DDA3",
+          300: "#7B4E08",
+          400: "#744509",
+          500: "#8A5308",
+          600: "#744509",
+          700: "#5D3908",
+          800: "#432A09",
+          900: "#33220C",
+          950: "#FFF8E8",
         },
         rose: {
-          50: "#FDF2F1",
-          100: "#FBE4E2",
-          200: "#F7C7C2",
-          300: "#E87D72",
-          400: "#C84B3D",
-          500: "#C84B3D",
-          600: "#B53C2E",
+          50: "#FFF4F2",
+          100: "#FCE8E4",
+          200: "#F5CEC6",
+          300: "#9F342B",
+          400: "#A53027",
+          500: "#C63D35",
+          600: "#B5322A",
           700: "#992A1E",
           800: "#7D1F15",
-          900: "#1E2621",
-          950: "#FDF2F1",
+          900: "#5F211C",
+          950: "#FFF4F2",
         },
       },
       borderRadius: {
-        DEFAULT: "0.35rem",
+        DEFAULT: "0.4rem",
         sm: "0.25rem",
-        md: "0.35rem",
+        md: "0.4rem",
         lg: "0.5rem",
         xl: "0.75rem",
         "2xl": "1rem",
         full: "9999px",
       },
       boxShadow: {
-        subtle:
-          "0 1px 2px 0 rgba(30, 38, 33, 0.04), 0 1px 3px 0 rgba(30, 38, 33, 0.02)",
-        card: "0 2px 4px 0 rgba(30, 38, 33, 0.04), 0 1px 2px 0 rgba(30, 38, 33, 0.02)",
-        elevated:
-          "0 4px 12px -2px rgba(30, 38, 33, 0.08), 0 2px 6px -1px rgba(30, 38, 33, 0.04)",
+        subtle: "0 1px 2px rgba(17, 19, 24, 0.035)",
+        card: "0 1px 3px rgba(17, 19, 24, 0.045)",
+        elevated: "0 12px 30px rgba(17, 19, 24, 0.12)",
       },
     },
   },

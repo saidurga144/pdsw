@@ -5,10 +5,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function LoginPage() {
   return (
-    <div
-      className="w-full h-screen overflow-hidden flex flex-col"
-      style={{ backgroundColor: "#eef0f5" }}
-    >
+    <div className="min-h-svh w-full bg-background">
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

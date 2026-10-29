@@ -4,26 +4,27 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 220 15% 8%;
+    --font-primary: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    --background: 60 14% 97%;
+    --foreground: 220 18% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 8%;
+    --card-foreground: 220 18% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 8%;
-    --primary: 356 82% 54%;
+    --popover-foreground: 220 18% 10%;
+    --primary: 24 91% 54%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 18% 95%;
-    --secondary-foreground: 220 15% 8%;
-    --muted: 220 18% 96%;
-    --muted-foreground: 220 10% 42%;
-    --accent: 356 82% 54%;
+    --secondary: 40 18% 94%;
+    --secondary-foreground: 220 18% 10%;
+    --muted: 45 12% 94%;
+    --muted-foreground: 215 12% 42%;
+    --accent: 24 91% 54%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 4 70% 52%;
+    --destructive: 4 72% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 14% 86%;
-    --input: 220 14% 82%;
-    --ring: 356 82% 54%;
-    --radius: 0.35rem;
+    --border: 45 8% 86%;
+    --input: 45 8% 80%;
+    --ring: 24 91% 54%;
+    --radius: 0.4rem;
   }
 
   * { @apply border-border; }
@@ -49,7 +50,7 @@
   }
 
   html, body {
-    background-color: #ffffff;
+    background-color: #f8f8f6;
     color: #111318;
     font-family: var(--font-primary), 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -189,26 +190,32 @@
   }
 }
 
-::selection { background: #ef3340; color: #ffffff; }
+::selection { background: #f47721; color: #ffffff; }
+.text-primary { color: #a84b0b; }
+.hover\:text-primary:hover { color: #a84b0b; }
+.bg-primary.text-white,
+.bg-primary.text-primary-foreground,
+.bg-cyan-500.text-slate-950,
+.bg-cyan-500.text-white { color: #111318; }
 
-/* Shared Inter display treatment. */
+/* Inter is used for interface text; Georgia gives major headings an editorial voice. */
 .display-type {
-  font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
 }
 
 /* Shared heading treatment for every role portal. */
 h1, h2, h3 {
-  font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: -0.025em;
 }
 
 /* Consistent, readable display treatment for empty and ready states. */
 .empty-state-title {
-  font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 1rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: 0;
@@ -222,7 +229,7 @@ h1, h2, h3 {
 /* Navigation labels inherit the same application-wide Inter family. */
 .sidebar-display {
   font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.2;
@@ -245,58 +252,110 @@ h1, h2, h3 {
   font-size: 0.9375rem;
 }
 
+.role-portal-content table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.role-portal-content thead {
+  background: #f3f0e9;
+}
+
+.role-portal-content th {
+  color: #4b5563;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.role-portal-content td {
+  vertical-align: middle;
+}
+
+.role-portal-content input:not([type="checkbox"]):not([type="radio"]),
+.role-portal-content select,
+.role-portal-content textarea {
+  border-color: hsl(var(--input));
+  background-color: #fff;
+}
+
+.role-portal-content input:focus-visible,
+.role-portal-content select:focus-visible,
+.role-portal-content textarea:focus-visible {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.18);
+}
+
+.role-portal-content .shadow-subtle,
+.role-portal-content .shadow-card {
+  box-shadow: none;
+}
+
 .role-portal-content h1 {
-  font-size: 1.25rem !important;
+  font-size: 1.75rem;
   line-height: 1.25;
 }
 
 .role-portal-content h2 {
-  font-size: 1.125rem !important;
+  font-size: 1.25rem;
   line-height: 1.3;
 }
 
 .role-portal-content h3 {
-  font-size: 1rem !important;
+  font-size: 1.125rem;
   line-height: 1.35;
 }
 
 /* Authentication titles use the shared application typeface. */
 .login-display {
-  font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: Georgia, 'Times New Roman', serif;
   letter-spacing: 0;
   line-height: 1.1;
 }
 
 /* Responsive hero heading size — fits naturally without overwhelming the viewport */
 .hero-heading-size {
-  font-size: clamp(2.2rem, 4.5vw, 4rem);
-  line-height: 1.08;
+  font-size: clamp(2.8rem, 6.1vw, 5.3rem);
+  line-height: 0.98;
 }
 
-.eyebrow { color: #ef3340; font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
-.surface-grid { background-image: linear-gradient(rgba(17, 19, 24, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(17, 19, 24, 0.035) 1px, transparent 1px); background-size: 44px 44px; }
+.eyebrow { color: #b94f0a; font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+.surface-grid { background-color: #f8f8f6; }
 .reveal-up { animation: reveal-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes reveal-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
 
-.bg-sage-primary { background-color: #ef3340; }
-.hover\:bg-sage-primary-hover:hover { background-color: #c92734; }
-.text-sage-primary { color: #ef3340; }
-.bg-sage-secondary { background-color: #eef0f4; }
+.bg-sage-primary { background-color: #f47721; }
+.hover\:bg-sage-primary-hover:hover { background-color: #d96516; }
+.text-sage-primary { color: #b94f0a; }
+.bg-sage-secondary { background-color: #f3f0e9; }
 .text-sage-secondary { color: #111318; }
-.bg-sage-accent { background-color: #ef3340; }
-.bg-sage-muted { background-color: #f2f3f5; }
-.text-sage-muted { color: #667080; }
-.border-sage-border { border-color: #d9dde5; }
+.bg-sage-accent { background-color: #f47721; }
+.bg-sage-muted { background-color: #f3f2ee; }
+.text-sage-muted { color: #5f6874; }
+.border-sage-border { border-color: #dedfdb; }
 .bg-sage-card { background-color: #ffffff; }
-.bg-sage-bg { background-color: #ffffff; }
+.bg-sage-bg { background-color: #f8f8f6; }
 .text-sage-text { color: #111318; }
-.bg-sage-destructive { background-color: #d94a42; }
-.text-sage-destructive { color: #d94a42; }
+.bg-sage-destructive { background-color: #c63d35; }
+.text-sage-destructive { color: #a32923; }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #ffffff; }
+::-webkit-scrollbar-track { background: #f8f8f6; }
 ::-webkit-scrollbar-thumb { background: #cbd1db; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #ef3340; }
+::-webkit-scrollbar-thumb:hover { background: #f47721; }
+
+.editorial-heading { font-family: Georgia, 'Times New Roman', serif; font-weight: 500; letter-spacing: -0.035em; }
+.dashboard-surface { border: 1px solid hsl(var(--border)); background: #fff; box-shadow: none; }
+.auth-page { background: #f8f8f6; }
+.auth-showcase { background: #111d28; color: #fff; }
+
+@media (max-width: 639px) {
+  .hero-heading-size { font-size: clamp(2.55rem, 12vw, 4rem); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -309,7 +368,7 @@ h1, h2, h3 {
 
 /* Main page title (h1) — e.g. beneficiary full name, page headings */
 .beneficiary-dashboard .ben-title {
-  font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
   font-size: 1.25rem;
   line-height: 1.2;
@@ -318,7 +377,7 @@ h1, h2, h3 {
 
 /* Section heading (h2) — card section titles */
 .beneficiary-dashboard .ben-section-title {
-  font-family: var(--font-primary), 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-weight: 600;
   font-size: 1.125rem;
   line-height: 1.25;
