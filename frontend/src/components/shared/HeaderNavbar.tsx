@@ -23,7 +23,7 @@ export const HeaderNavbar: React.FC = () => {
     notificationHrefByRole[normalizeRole(role || "")] || "/";
 
   return (
-    <header className="glass-dashboard-header sticky top-0 z-30 border-b border-border bg-[var(--glass-header-surface)] text-foreground backdrop-blur-xl">
+    <header className="glass-dashboard-header sticky top-0 z-30 shrink-0 border-b border-border bg-[var(--glass-header-surface)] text-foreground backdrop-blur-xl">
       <div className="flex min-h-16 items-center justify-between gap-3 px-3 py-2.5 sm:px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <button

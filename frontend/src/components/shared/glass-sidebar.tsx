@@ -54,7 +54,7 @@ export function GlassSidebar({
         data-collapsed={isCollapsed}
         aria-label="Dashboard sidebar"
         className={cn(
-          "glass-sidebar hidden h-[calc(100dvh-4rem)] min-h-0 shrink-0 flex-col overflow-hidden md:sticky md:top-16 md:flex",
+          "glass-sidebar hidden h-full min-h-0 shrink-0 flex-col overflow-hidden md:flex",
           "transition-[width] duration-300 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none",
           isCollapsed ? "w-[4.5rem]" : "w-60",
           className,

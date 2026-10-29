@@ -138,12 +138,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({
 
   // Authenticated Portal Dashboard Shell
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground font-sans w-full overflow-x-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden bg-background text-foreground font-sans w-full">
       <HeaderNavbar />
       <GlobalCommandSearch />
-      <div className="surface-grid flex flex-1 min-w-0 overflow-hidden">
+      <div className="surface-grid flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
-        <main className="role-portal-content min-w-0 w-full flex-1 overflow-y-auto p-4 pb-6 sm:p-5 sm:pb-6 md:p-8 md:pb-8">
+        <main className="role-portal-content min-h-0 min-w-0 w-full flex-1 overflow-y-auto overscroll-contain p-4 pb-6 sm:p-5 sm:pb-6 md:p-8 md:pb-8">
           <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </main>
       </div>
