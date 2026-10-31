@@ -177,7 +177,11 @@ async def create_change_request(
     collection = _mongo_collection()
     if collection is not None:
         try:
-            await run_in_threadpool(lambda: collection.insert_one(record_data))
+            # PyMongo mutates the inserted mapping by adding an ObjectId under
+            # ``_id``. Keep that database-only value out of FastAPI's response,
+            # whose JSON encoder cannot serialize a BSON ObjectId.
+            mongo_record = dict(record_data)
+            await run_in_threadpool(lambda: collection.insert_one(mongo_record))
             return {"success": True, **record_data}
         except Exception as exc:
             logger.warning(
