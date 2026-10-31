@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwtToken } from "@/server/auth/jwt";
-
-const PINATA_SERVICE_URL =
-  process.env.PINATA_SERVICE_URL || "http://localhost:5001";
+import { fetchPinataService } from "@/server/services/pinata-proxy";
 
 /**
  * POST /api/ipfs/upload
@@ -36,7 +34,7 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get("content-type") || "";
     const body = await req.arrayBuffer();
 
-    const pinataRes = await fetch(`${PINATA_SERVICE_URL}/api/ipfs/upload`, {
+    const pinataRes = await fetchPinataService("/api/ipfs/upload", {
       method: "POST",
       headers: {
         "content-type": contentType,
@@ -44,7 +42,17 @@ export async function POST(req: NextRequest) {
       body: body,
     });
 
-    const data = await pinataRes.json();
+    const data = await pinataRes.json().catch(() => null);
+    if (pinataRes.status === 404) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "The Pinata upload endpoint returned 404. Confirm that PINATA_SERVICE_URL points to the deployed Pinata service, then redeploy that service.",
+        },
+        { status: 502 },
+      );
+    }
     return NextResponse.json(data, { status: pinataRes.status });
   } catch (err: any) {
     console.error(
@@ -55,7 +63,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         error:
-          "IPFS upload service is unavailable. Please ensure the Pinata service is running.",
+          "IPFS upload service is unavailable. Check the Pinata service deployment and PINATA_SERVICE_URL configuration.",
       },
       { status: 503 },
     );
@@ -68,10 +76,20 @@ export async function POST(req: NextRequest) {
  */
 export async function GET() {
   try {
-    const pinataRes = await fetch(`${PINATA_SERVICE_URL}/api/ipfs/health`, {
+    const pinataRes = await fetchPinataService("/api/ipfs/health", {
       method: "GET",
     });
-    const data = await pinataRes.json();
+    const data = await pinataRes.json().catch(() => null);
+    if (pinataRes.status === 404) {
+      return NextResponse.json(
+        {
+          status: "misconfigured",
+          error:
+            "The configured Pinata service does not expose /api/ipfs/health. Check PINATA_SERVICE_URL and the Render deployment.",
+        },
+        { status: 502 },
+      );
+    }
     return NextResponse.json(data, { status: pinataRes.status });
   } catch {
     return NextResponse.json(
