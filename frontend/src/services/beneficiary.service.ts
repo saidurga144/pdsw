@@ -133,17 +133,11 @@ export class BeneficiaryService {
   }
 
   static async getBeneficiaries(): Promise<Beneficiary[]> {
-    try {
-      const res = await apiClient.get("/officer/beneficiaries");
-      if (
-        res.data?.success &&
-        Array.isArray(res.data.beneficiaries) &&
-        res.data.beneficiaries.length > 0
-      ) {
-        return res.data.beneficiaries;
-      }
-    } catch {}
-    return [];
+    const res = await apiClient.get("/officer/beneficiaries");
+    if (res.data?.success && Array.isArray(res.data.beneficiaries)) {
+      return res.data.beneficiaries;
+    }
+    throw new Error(res.data?.error || "Could not load beneficiary records.");
   }
 
   static async getBeneficiaryById(

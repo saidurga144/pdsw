@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { MOCK_BENEFICIARIES } from "@/mock-data/pds-data";
 import { TransactionService } from "@/services/transaction.service";
+import { BeneficiaryService } from "@/services/beneficiary.service";
 import {
   Building2,
   Search,
@@ -20,11 +20,12 @@ export default function OfficerDistributionPage() {
   const [searchId, setSearchId] = useState("");
   const [selectedBeneficiary, setSelectedBeneficiary] =
     useState<Beneficiary | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [receipt, setReceipt] = useState<any | null>(null);
   const [error, setError] = useState("");
 
-  const handleLookup = () => {
+  const handleLookup = async () => {
     setError("");
     const cleanQuery = searchId.trim().toLowerCase();
     if (!cleanQuery) {
@@ -35,19 +36,32 @@ export default function OfficerDistributionPage() {
       return;
     }
 
-    const found = MOCK_BENEFICIARIES.find(
-      (b) =>
-        b.id.toLowerCase() === cleanQuery ||
-        b.rationCardId.toLowerCase() === cleanQuery,
-    );
-
-    if (found) {
-      setSelectedBeneficiary(found);
-    } else {
-      setSelectedBeneficiary(null);
-      setError(
-        `No beneficiary record found matching "${searchId}". Please check ID and try again.`,
+    setSelectedBeneficiary(null);
+    setIsLookingUp(true);
+    try {
+      const beneficiaries = await BeneficiaryService.getBeneficiaries();
+      const found = beneficiaries.find(
+        (beneficiary) =>
+          String(beneficiary.id || "").trim().toLowerCase() === cleanQuery ||
+          String(beneficiary.rationCardId || "").trim().toLowerCase() ===
+            cleanQuery,
       );
+
+      if (found) {
+        setSelectedBeneficiary(found);
+      } else {
+        setError(
+          `No beneficiary record found matching "${searchId}". Please check the ID or ration card number and try again.`,
+        );
+      }
+    } catch (lookupError) {
+      setError(
+        lookupError instanceof Error
+          ? lookupError.message
+          : "Could not load beneficiary records. Please try again.",
+      );
+    } finally {
+      setIsLookingUp(false);
     }
   };
 
@@ -109,10 +123,12 @@ export default function OfficerDistributionPage() {
           />
         </div>
         <button
+          type="button"
           onClick={handleLookup}
-          className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
+          disabled={isLookingUp}
+          className="px-5 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
         >
-          Verify Entitlement
+          {isLookingUp ? "Searching..." : "Verify Entitlement"}
         </button>
       </div>
 
