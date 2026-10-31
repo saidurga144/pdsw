@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.config import settings
 from backend import database
-from backend.routers import auth, audit
+from backend.routers import auth, audit, requests
 from backend.database.mongodb import init_mongodb, close_mongodb
 from backend.auth.user_store import get_user_store_label
 
@@ -95,6 +95,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
+app.include_router(requests.router, prefix="/api")
 
 
 @app.get("/api/health")

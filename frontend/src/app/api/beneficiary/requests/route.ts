@@ -1,24 +1,16 @@
-import { NextResponse } from "next/server";
-import { withAuth, getClientIp } from "@/server/middleware/auth.middleware";
-import { ServerBeneficiaryService } from "@/server/services/beneficiary.service";
+import { NextRequest } from "next/server";
+import { withAuth } from "@/server/middleware/auth.middleware";
+import { proxyFastApiJson } from "@/server/services/fastapi-proxy";
+
+export const GET = withAuth(
+  async (req) => proxyFastApiJson(req, "/api/requests/mine", "GET"),
+  { requiredRoles: ["BENEFICIARY"] },
+);
 
 export const POST = withAuth(
-  async (req, { user }) => {
-    const ipAddress = getClientIp(req);
+  async (req: NextRequest) => {
     const body = await req.json();
-    const { beneficiaryId, requestType, previousData, requestedData } = body;
-
-    const result = await ServerBeneficiaryService.submitChangeRequest({
-      beneficiaryId: beneficiaryId || "ben-001",
-      requestType,
-      previousData,
-      requestedData,
-      actorId: user.userId,
-      actorRole: user.role,
-      ipAddress,
-    });
-
-    return NextResponse.json(result);
+    return proxyFastApiJson(req, "/api/requests", "POST", body);
   },
   { requiredRoles: ["BENEFICIARY", "PDS_OFFICER", "ADMIN"] },
 );

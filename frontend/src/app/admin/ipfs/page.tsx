@@ -1,21 +1,58 @@
 "use client";
 
-import React, { useState } from "react";
-import { MOCK_IPFS_EVIDENCE } from "@/mock-data/pds-data";
+import React, { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/services/api/client";
 import {
   Database,
   Search,
   Copy,
   Check,
   ExternalLink,
-  ShieldCheck,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 
+interface IPFSEvidenceRecord {
+  cid: string;
+  eventId: string;
+  recordId: string;
+  operation: string;
+  actor: string;
+  payloadSize: number;
+  fileName: string;
+  fileHash: string;
+  gatewayUrl: string;
+  submittedAt: string;
+}
+
 export default function IPFSEvidenceExplorerPage() {
-  const [evidenceList, setEvidenceList] = useState(MOCK_IPFS_EVIDENCE);
+  const [evidenceList, setEvidenceList] = useState<IPFSEvidenceRecord[]>([]);
   const [searchCid, setSearchCid] = useState("");
   const [copiedCid, setCopiedCid] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const loadEvidence = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const response = await apiClient.get("/admin/ipfs");
+      if (!response.data?.success || !Array.isArray(response.data.documents)) {
+        throw new Error(response.data?.detail || "Could not load IPFS records.");
+      }
+      setEvidenceList(response.data.documents);
+    } catch (error) {
+      setLoadError(
+        error instanceof Error ? error.message : "Could not load IPFS records.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadEvidence();
+  }, [loadEvidence]);
 
   const filtered = evidenceList.filter(
     (e) =>
@@ -52,6 +89,15 @@ export default function IPFSEvidenceExplorerPage() {
             className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => void loadEvidence()}
+          disabled={loading}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-60"
+        >
+          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm responsive-table-wrap">
@@ -68,7 +114,14 @@ export default function IPFSEvidenceExplorerPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                  <Loader2 className="mx-auto mb-2 size-6 animate-spin" />
+                  Loading IPFS records...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td
                   colSpan={7}
@@ -80,9 +133,11 @@ export default function IPFSEvidenceExplorerPage() {
                       No IPFS Records Found
                     </p>
                     <p className="text-xs text-slate-500">
-                      {searchCid
+                      {loadError
+                        ? loadError
+                        : searchCid
                         ? "No records match your search CID."
-                        : "No audit evidence or transaction receipts are currently pinned to IPFS."}
+                        : "No beneficiary supporting documents have been submitted yet."}
                     </p>
                   </div>
                 </td>
@@ -123,12 +178,19 @@ export default function IPFSEvidenceExplorerPage() {
                     {item.actor}
                   </td>
                   <td className="px-4 py-3 text-slate-400">
-                    {item.payloadSize}
+                    {item.payloadSize >= 1024 * 1024
+                      ? `${(item.payloadSize / (1024 * 1024)).toFixed(2)} MB`
+                      : `${Math.max(1, Math.round(item.payloadSize / 1024))} KB`}
                   </td>
                   <td className="px-4 py-3 text-right font-sans">
-                    <button className="px-3 py-1 bg-cyan-950 text-cyan-300 hover:bg-cyan-900 border border-cyan-800 rounded font-semibold text-[11px] inline-flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> Verify DAG
-                    </button>
+                    <a
+                      href={item.gatewayUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1 bg-cyan-950 text-cyan-300 hover:bg-cyan-900 border border-cyan-800 rounded font-semibold text-[11px] inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Open document
+                    </a>
                   </td>
                 </tr>
               ))

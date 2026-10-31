@@ -76,3 +76,26 @@ class DocumentAudit(Base):
     status = Column(String(50), default="CONFIRMED_ON_CHAIN", nullable=False)
     metadata_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=_utc_now)
+
+
+class ChangeRequestRecord(Base):
+    """Persisted beneficiary requests and their IPFS document references."""
+
+    __tablename__ = "change_requests"
+
+    id = Column(String(64), primary_key=True, index=True)
+    beneficiary_id = Column(String(64), nullable=False, index=True)
+    beneficiary_name = Column(String(255), nullable=False)
+    beneficiary_email = Column(String(255), nullable=False, default="")
+    ration_card_id = Column(String(100), nullable=False, default="")
+    jurisdiction = Column(String(255), nullable=False, default="")
+    request_type = Column(String(80), nullable=False)
+    previous_data = Column(JSON, nullable=False, default=dict)
+    requested_data = Column(JSON, nullable=False, default=dict)
+    reason = Column(Text, nullable=False)
+    supporting_documents = Column(JSON, nullable=False, default=list)
+    status = Column(String(50), nullable=False, default="SUBMITTED", index=True)
+    submitted_at = Column(DateTime, nullable=False, default=_utc_now, index=True)
+    review_notes = Column(Text, nullable=False, default="")
+    reviewed_by = Column(String(64), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)

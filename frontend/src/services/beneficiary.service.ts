@@ -1,6 +1,40 @@
-import { Beneficiary, ChangeRequest } from "@/types";
+import { Beneficiary, ChangeRequest, SupportingDocument } from "@/types";
 import { apiClient } from "./api/client";
 import { useAuthStore } from "@/stores/auth.store";
+
+function mapChangeRequest(record: any): ChangeRequest {
+  return {
+    id: record.id,
+    beneficiaryId: record.beneficiary_id ?? record.beneficiaryId ?? "",
+    beneficiaryName:
+      record.beneficiary_name ?? record.beneficiaryName ?? "Beneficiary",
+    rationCardId: record.ration_card_id ?? record.rationCardId ?? "",
+    requestType: record.request_type ?? record.requestType ?? "ADDRESS_CHANGE",
+    submittedAt: record.submitted_at ?? record.submittedAt ?? "",
+    status: record.status ?? "SUBMITTED",
+    previousData: record.previous_data ?? record.previousData ?? {},
+    requestedData: record.requested_data ?? record.requestedData ?? {},
+    reason: record.reason ?? "",
+    supportingDocuments: ((record.supporting_documents ??
+      record.supportingDocuments ?? []) as any[]).map((document) => ({
+      documentId: document.document_id ?? document.documentId ?? "",
+      ipfsCid: document.ipfs_cid ?? document.ipfsCid ?? "",
+      fileHash: document.file_hash ?? document.fileHash ?? "",
+      txHash: document.tx_hash ?? document.txHash ?? "IPFS_ONLY",
+      gatewayUrl: document.gateway_url ?? document.gatewayUrl ?? "",
+      fileName: document.file_name ?? document.fileName ?? "Document",
+      fileSize: document.file_size ?? document.fileSize ?? 0,
+      mimeType: document.mime_type ?? document.mimeType ?? "application/octet-stream",
+    })) as SupportingDocument[],
+    aiRiskScore: record.ai_risk_score ?? record.aiRiskScore ?? 5,
+    aiRiskLevel: record.ai_risk_level ?? record.aiRiskLevel ?? "LOW",
+    aiExplainabilityNotes:
+      record.ai_explainability_notes ?? record.aiExplainabilityNotes ?? [],
+    officerRemarks: record.review_notes ?? record.officerRemarks,
+    reviewedBy: record.reviewed_by ?? record.reviewedBy,
+    reviewedAt: record.reviewed_at ?? record.reviewedAt,
+  };
+}
 
 export class BeneficiaryService {
   /**
@@ -127,78 +161,39 @@ export class BeneficiaryService {
   }
 
   static async getChangeRequests(): Promise<ChangeRequest[]> {
-    try {
-      const res = await apiClient.get("/officer/requests");
-      if (res.data?.success && Array.isArray(res.data.requests)) {
-        return res.data.requests;
-      }
-    } catch {}
-    return [];
+    const res = await apiClient.get("/beneficiary/requests");
+    if (!res.data?.success || !Array.isArray(res.data.requests)) {
+      throw new Error(res.data?.detail || res.data?.error || "Could not load requests.");
+    }
+    return res.data.requests.map(mapChangeRequest);
   }
 
   static async submitChangeRequest(
     request: Partial<ChangeRequest>,
   ): Promise<ChangeRequest> {
-    const currentUser = useAuthStore.getState().user;
-    const benId = request.beneficiaryId || currentUser?.id || "BEN-USER";
-    const benName =
-      request.beneficiaryName || currentUser?.name || "Citizen User";
+    const res = await apiClient.post("/beneficiary/requests", {
+      request_type: request.requestType,
+      reason: request.reason,
+      previous_data: request.previousData || {},
+      requested_data: request.requestedData || {},
+      supporting_documents: (request.supportingDocuments || []).map((document) => ({
+        document_id: document.documentId,
+        ipfs_cid: document.ipfsCid,
+        file_hash: document.fileHash,
+        tx_hash: document.txHash,
+        file_name: document.fileName,
+        file_size: document.fileSize,
+        mime_type: document.mimeType,
+        gateway_url: document.gatewayUrl,
+      })),
+    });
 
-    try {
-      const res = await apiClient.post("/beneficiary/requests", {
-        beneficiaryId: benId,
-        requestType: request.requestType,
-        previousData: request.previousData,
-        requestedData: request.requestedData,
-      });
-
-      if (res.data?.success) {
-        return {
-          id:
-            res.data.id || `CR-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-          beneficiaryId: benId,
-          beneficiaryName: benName,
-          rationCardId:
-            request.rationCardId || `RC-${benId.slice(-6).toUpperCase()}`,
-          requestType: request.requestType || "ADDRESS_CHANGE",
-          submittedAt: new Date().toISOString(),
-          status: "SUBMITTED",
-          previousData: request.previousData || {},
-          requestedData: request.requestedData || {},
-          reason: request.reason || "",
-          supportingDocuments: request.supportingDocuments || [
-            "Aadhaar_Document_Proof.pdf",
-          ],
-          aiRiskScore: 8,
-          aiRiskLevel: "LOW",
-          aiExplainabilityNotes: [
-            "Standard citizen modification request via verified portal.",
-          ],
-        };
-      }
-    } catch {}
-
-    return {
-      id: `CR-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      beneficiaryId: benId,
-      beneficiaryName: benName,
-      rationCardId:
-        request.rationCardId || `RC-${benId.slice(-6).toUpperCase()}`,
-      requestType: request.requestType || "ADDRESS_CHANGE",
-      submittedAt: new Date().toISOString(),
-      status: "SUBMITTED",
-      previousData: request.previousData || {},
-      requestedData: request.requestedData || {},
-      reason: request.reason || "",
-      supportingDocuments: request.supportingDocuments || [
-        "Aadhaar_Document_Proof.pdf",
-      ],
-      aiRiskScore: 8,
-      aiRiskLevel: "LOW",
-      aiExplainabilityNotes: [
-        "Citizen modification request submitted via authenticated portal.",
-      ],
-    };
+    if (!res.data?.success || !res.data?.id) {
+      throw new Error(
+        res.data?.detail || res.data?.error || "Could not save the change request.",
+      );
+    }
+    return mapChangeRequest(res.data);
   }
 
   static async updateChangeRequestStatus(
@@ -206,31 +201,16 @@ export class BeneficiaryService {
     status: ChangeRequest["status"],
     remarks?: string,
   ): Promise<ChangeRequest> {
-    try {
-      await apiClient.post(`/officer/requests/${id}/review`, {
-        requestId: id,
-        status: status === "APPROVED" ? "APPROVED" : "REJECTED",
-        reviewNotes: remarks,
-      });
-    } catch {}
-
-    return {
-      id,
-      beneficiaryId: "BEN-USER",
-      beneficiaryName: "Citizen User",
-      rationCardId: "RC-CARD",
-      requestType: "ADDRESS_CHANGE",
-      submittedAt: new Date().toISOString(),
+    const res = await apiClient.post(`/officer/requests/${id}/review`, {
+      requestId: id,
       status,
-      previousData: {},
-      requestedData: {},
-      reason: "",
-      supportingDocuments: [],
-      aiRiskScore: 5,
-      aiRiskLevel: "LOW",
-      aiExplainabilityNotes: [],
-      officerRemarks: remarks,
-      reviewedAt: new Date().toISOString(),
-    };
+      reviewNotes: remarks,
+    });
+    if (!res.data?.success || !res.data?.request) {
+      throw new Error(
+        res.data?.detail || res.data?.error || "Could not update the request.",
+      );
+    }
+    return mapChangeRequest(res.data.request);
   }
 }

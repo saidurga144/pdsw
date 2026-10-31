@@ -19,11 +19,11 @@ import {
 export default function OfficerModificationRequestsPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedReqId, setSelectedReqId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<
-    "APPROVE" | "REJECT" | "ESCALATE" | null
-  >(null);
   const [officerRemarks, setOfficerRemarks] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [isReviewing, setIsReviewing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function loadRequests() {
@@ -31,14 +31,18 @@ export default function OfficerModificationRequestsPage() {
         const res = await apiClient.get("/officer/requests");
         if (res.data?.success && Array.isArray(res.data.requests)) {
           setRequests(res.data.requests);
+          setLoadError("");
           if (res.data.requests.length > 0) {
             setSelectedReqId(res.data.requests[0].id);
           }
         } else {
-          setRequests([]);
+          throw new Error(res.data?.detail || res.data?.error || "Could not load requests.");
         }
-      } catch {
+      } catch (error) {
         setRequests([]);
+        setLoadError(
+          error instanceof Error ? error.message : "Could not load requests.",
+        );
       } finally {
         setLoading(false);
       }
@@ -50,34 +54,36 @@ export default function OfficerModificationRequestsPage() {
   const currentReq =
     requests.find((r) => r.id === selectedReqId) || requests[0];
 
-  const handleExecuteAction = async () => {
-    if (!actionType || !selectedReqId) return;
+  const handleExecuteAction = async (
+    actionType: "APPROVE" | "REJECT" | "ESCALATE",
+  ) => {
+    if (!selectedReqId || isReviewing) return;
     const statusMap = {
       APPROVE: "APPROVED" as const,
       REJECT: "REJECTED" as const,
       ESCALATE: "ESCALATED" as const,
     };
+    setActionError("");
+    setIsReviewing(true);
     try {
-      await BeneficiaryService.updateChangeRequestStatus(
+      const updated = await BeneficiaryService.updateChangeRequestStatus(
         selectedReqId,
         statusMap[actionType],
         officerRemarks,
       );
-    } catch {}
-
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === selectedReqId
-          ? {
-              ...r,
-              status: statusMap[actionType],
-              review_notes: officerRemarks,
-            }
-          : r,
-      ),
-    );
-    setActionType(null);
-    setOfficerRemarks("");
+      setRequests((previous) =>
+        previous.filter((request) => request.id !== selectedReqId),
+      );
+      setSelectedReqId(null);
+      setOfficerRemarks("");
+      if (!updated) throw new Error("Request update was not confirmed by the backend.");
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Could not update the request.",
+      );
+    } finally {
+      setIsReviewing(false);
+    }
   };
 
   return (
@@ -96,6 +102,10 @@ export default function OfficerModificationRequestsPage() {
         <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
           <Loader2 className="size-6 animate-spin text-primary" />
           <span className="text-xs">Loading modification requests...</span>
+        </div>
+      ) : loadError ? (
+        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {loadError}
         </div>
       ) : requests.length === 0 ? (
         <div className="bg-card border border-border rounded-md p-12 text-center space-y-3 shadow-subtle">
@@ -210,6 +220,47 @@ export default function OfficerModificationRequestsPage() {
                 </div>
 
                 <div className="space-y-3 pt-2">
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    Supporting Documents
+                  </h3>
+                  {Array.isArray(currentReq.supporting_documents) &&
+                  currentReq.supporting_documents.length > 0 ? (
+                    <div className="space-y-2">
+                      {currentReq.supporting_documents.map((document: any) => (
+                        <div
+                          key={document.document_id}
+                          className="flex flex-col gap-2 rounded-md border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <FileText className="size-4 shrink-0 text-primary" />
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold text-foreground">
+                                {document.file_name}
+                              </p>
+                              <p className="truncate font-mono text-[10px] text-muted-foreground">
+                                CID: {document.ipfs_cid}
+                              </p>
+                            </div>
+                          </div>
+                          <a
+                            href={document.gateway_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                          >
+                            Open on IPFS <FileText className="size-3.5" />
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="rounded-md border border-border p-3 text-xs text-muted-foreground">
+                      No supporting documents were attached to this request.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2">
                   <label className="text-xs font-semibold text-foreground block">
                     Officer Verification Remarks
                   </label>
@@ -222,20 +273,21 @@ export default function OfficerModificationRequestsPage() {
                   />
 
                   <div className="flex flex-wrap gap-2 justify-end pt-2 border-t border-border">
+                    {actionError && (
+                      <p role="alert" className="mr-auto w-full text-xs text-destructive">
+                        {actionError}
+                      </p>
+                    )}
                     <button
-                      onClick={() => {
-                        setActionType("REJECT");
-                        handleExecuteAction();
-                      }}
+                      disabled={isReviewing}
+                      onClick={() => void handleExecuteAction("REJECT")}
                       className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive text-xs font-bold uppercase rounded-md transition-all"
                     >
                       Reject Request
                     </button>
                     <button
-                      onClick={() => {
-                        setActionType("APPROVE");
-                        handleExecuteAction();
-                      }}
+                      disabled={isReviewing}
+                      onClick={() => void handleExecuteAction("APPROVE")}
                       className="px-5 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-subtle"
                     >
                       Approve & Re-anchor State Hash

@@ -36,3 +36,22 @@ services:
         value: "System Administrator"
       - key: BOOTSTRAP_ADMIN_SECRET
         sync: false
+
+  - type: web
+    name: pdsw-pinata
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: pinata
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/ipfs/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PINATA_JWT
+        sync: false
+      - key: MAX_FILE_SIZE_MB
+        value: "15"
+      - key: ALLOWED_ORIGINS
+        value: https://pdsw.netlify.app

@@ -3,7 +3,6 @@ import { AuditService } from "@/server/services/audit.service";
 import { Beneficiary, FamilyMember, Eligibility } from "@/types";
 
 // In-memory change requests & grievances stores
-const runtimeChangeRequests: any[] = [];
 const runtimeGrievances: any[] = [];
 
 export class ServerBeneficiaryService {
@@ -183,55 +182,6 @@ export class ServerBeneficiaryService {
         ipfsCid: "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
       },
     ];
-  }
-
-  /**
-   * Submits a change request (address, family member, migration) with audit event
-   */
-  static async submitChangeRequest(params: {
-    beneficiaryId: string;
-    requestType: string;
-    previousData: any;
-    requestedData: any;
-    reason?: string;
-    supportingDocuments?: string[];
-    actorId?: string;
-    actorRole?: string;
-    ipAddress?: string;
-  }) {
-    const id = `CR-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    const now = new Date().toISOString();
-
-    const record = {
-      id,
-      beneficiary_id: params.beneficiaryId,
-      request_type: params.requestType,
-      previous_data: params.previousData,
-      requested_data: params.requestedData,
-      reason: params.reason || "Citizen online self-service request",
-      status: "SUBMITTED",
-      submitted_at: now,
-    };
-    runtimeChangeRequests.push(record);
-
-    await AuditService.recordEvent({
-      actorId: params.actorId || params.beneficiaryId,
-      actorRole: params.actorRole || "BENEFICIARY",
-      action: "SUBMIT_CHANGE_REQUEST",
-      resource: "CHANGE_REQUEST",
-      resourceId: id,
-      previousState: params.previousData,
-      newState: params.requestedData,
-      ipAddress: params.ipAddress,
-      outcome: "SUCCESS",
-    });
-
-    return {
-      success: true,
-      id,
-      status: "SUBMITTED",
-      message: "Change request queued for officer verification.",
-    };
   }
 
   /**

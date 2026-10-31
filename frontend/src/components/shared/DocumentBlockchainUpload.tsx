@@ -30,13 +30,21 @@ interface DocumentBlockchainUploadProps {
     txHash: string;
     gatewayUrl: string;
     fileName: string;
+    fileSize: number;
+    mimeType: string;
   }) => void;
+  onUploadStateChange?: (uploading: boolean) => void;
   className?: string;
 }
 
 export const DocumentBlockchainUpload: React.FC<
   DocumentBlockchainUploadProps
-> = ({ documentId: initialDocId, onUploadSuccess, className = "" }) => {
+> = ({
+  documentId: initialDocId,
+  onUploadSuccess,
+  onUploadStateChange,
+  className = "",
+}) => {
   const { user, role } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +74,8 @@ export const DocumentBlockchainUpload: React.FC<
     txHash: string;
     gatewayUrl: string;
     fileName: string;
+    fileSize: number;
+    mimeType: string;
   } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,11 +124,27 @@ export const DocumentBlockchainUpload: React.FC<
       "1/3 Uploading document and generating SHA-256 digest on Pinata IPFS...",
     );
     setUploadStep("PINATA_UPLOADING");
+    onUploadStateChange?.(true);
 
     try {
       // Step 1: Upload to Pinata Service
       const pinataRes = await uploadDocumentToPinata(selectedFile, docId);
       const { ipfs_cid, file_hash, gateway_url, file_name } = pinataRes;
+      const ipfsOnlyResult = {
+        documentId: docId,
+        ipfsCid: ipfs_cid,
+        fileHash: file_hash,
+        txHash: "IPFS_ONLY",
+        gatewayUrl: gateway_url,
+        fileName: file_name,
+        fileSize: pinataRes.file_size || selectedFile.size,
+        mimeType: pinataRes.mime_type || selectedFile.type,
+      };
+
+      // Keep the successful Pinata upload even if the later wallet step is skipped
+      // or cancelled. The parent persists this reference with the change request.
+      setUploadResult(ipfsOnlyResult);
+      onUploadSuccess?.(ipfsOnlyResult);
 
       // Step 2: Prompt user for MetaMask transaction
       setStatusMessage(
@@ -157,19 +183,13 @@ export const DocumentBlockchainUpload: React.FC<
       setUploadStep("SUCCESS");
 
       const finalResult = {
-        documentId: docId,
-        ipfsCid: ipfs_cid,
-        fileHash: file_hash,
+        ...ipfsOnlyResult,
         txHash: wasSkipped ? "IPFS_ONLY" : blockchainRes.txHash || "",
-        gatewayUrl: gateway_url,
-        fileName: file_name,
       };
 
       setUploadResult(finalResult);
 
-      if (onUploadSuccess) {
-        onUploadSuccess(finalResult);
-      }
+      onUploadSuccess?.(finalResult);
     } catch (err: any) {
       console.error("Upload flow error:", err);
       setErrorMessage(
@@ -177,6 +197,8 @@ export const DocumentBlockchainUpload: React.FC<
           "Failed to complete document upload & blockchain registration.",
       );
       setUploadStep("ERROR");
+    } finally {
+      onUploadStateChange?.(false);
     }
   };
 

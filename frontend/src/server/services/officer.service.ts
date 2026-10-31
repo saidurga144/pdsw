@@ -15,7 +15,6 @@ function authHeaders(token?: string): Record<string, string> {
 
 // In-memory for non-critical data (distributions/change requests still use runtime state)
 const runtimeDistributions: any[] = [];
-const runtimeChangeRequests: any[] = [];
 
 export class ServerOfficerService {
   /**
@@ -474,36 +473,4 @@ export class ServerOfficerService {
     return responseData;
   }
 
-  static async getChangeRequests() {
-    return runtimeChangeRequests;
-  }
-
-  static async reviewChangeRequest(
-    requestId: string,
-    status: "APPROVED" | "REJECTED" | "UNDER_INVESTIGATION",
-    reviewNotes: string,
-    officerId: string,
-    ipAddress?: string,
-  ) {
-    const item = runtimeChangeRequests.find((cr) => cr.id === requestId);
-    if (item) {
-      item.status = status;
-      item.review_notes = reviewNotes;
-      item.reviewed_by = officerId;
-      item.updated_at = new Date().toISOString();
-    }
-
-    await AuditService.recordEvent({
-      actorId: officerId,
-      actorRole: "OFFICER",
-      action: `CHANGE_REQUEST_${status}`,
-      resource: "CHANGE_REQUEST",
-      resourceId: requestId,
-      newState: { status, reviewNotes },
-      ipAddress,
-      outcome: "SUCCESS",
-    });
-
-    return { success: true, message: `Request status updated to ${status}.` };
-  }
 }

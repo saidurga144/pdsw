@@ -9,6 +9,7 @@ export interface PinataUploadResult {
   file_hash: string;
   file_name: string;
   file_size: number;
+  mime_type?: string;
   gateway_url: string;
   is_mock?: boolean;
 }

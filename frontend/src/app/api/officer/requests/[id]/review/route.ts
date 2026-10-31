@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
-import { withAuth, getClientIp } from "@/server/middleware/auth.middleware";
-import { ServerOfficerService } from "@/server/services/officer.service";
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/server/middleware/auth.middleware";
+import { proxyFastApiJson } from "@/server/services/fastapi-proxy";
 
 export const POST = withAuth(
-  async (req, { user, params }) => {
-    const ipAddress = getClientIp(req);
+  async (req: NextRequest, { params }) => {
     const body = await req.json();
     const routeRequestId = params.id;
     const requestId =
@@ -21,15 +20,15 @@ export const POST = withAuth(
       );
     }
 
-    const result = await ServerOfficerService.reviewChangeRequest(
-      requestId,
-      body.status,
-      body.reviewNotes,
-      user.userId,
-      ipAddress,
+    return proxyFastApiJson(
+      req,
+      `/api/requests/${encodeURIComponent(requestId)}/review`,
+      "PATCH",
+      {
+        status: body.status,
+        review_notes: body.reviewNotes ?? body.review_notes ?? "",
+      },
     );
-
-    return NextResponse.json(result);
   },
   { requiredRoles: ["PDS_OFFICER", "ADMIN"] },
 );

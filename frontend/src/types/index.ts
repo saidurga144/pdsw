@@ -117,6 +117,17 @@ export type ChangeRequestStatus =
   | "REJECTED"
   | "ESCALATED";
 
+export interface SupportingDocument {
+  documentId: string;
+  ipfsCid: string;
+  fileHash: string;
+  txHash: string;
+  gatewayUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+}
+
 export interface ChangeRequest {
   id: string;
   beneficiaryId: string;
@@ -128,7 +139,7 @@ export interface ChangeRequest {
   previousData: Record<string, any>;
   requestedData: Record<string, any>;
   reason: string;
-  supportingDocuments: string[];
+  supportingDocuments: SupportingDocument[];
   aiRiskScore: number;
   aiRiskLevel: "LOW" | "MEDIUM" | "HIGH";
   aiExplainabilityNotes: string[];

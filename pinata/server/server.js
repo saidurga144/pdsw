@@ -438,6 +438,17 @@ app.use((error, req, res, next) => {
     return next(error);
   }
 
+  if (error instanceof multer.MulterError) {
+    const isFileTooLarge = error.code === "LIMIT_FILE_SIZE";
+    return res.status(isFileTooLarge ? 413 : 400).json({
+      success: false,
+      message: isFileTooLarge
+        ? `File exceeds the ${MAX_FILE_SIZE_MB} MB limit.`
+        : error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   if (
     error?.message &&
     (error.message.includes("MIME type") ||

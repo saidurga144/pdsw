@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChangeRequest } from "@/types";
+import React, { useEffect, useState } from "react";
+import { ChangeRequest, SupportingDocument } from "@/types";
 import { BeneficiaryService } from "@/services/beneficiary.service";
 import { useAuthStore } from "@/stores/auth.store";
 import {
@@ -19,26 +19,61 @@ export default function ChangeRequestsPage() {
   const { user } = useAuthStore();
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [supportingDocuments, setSupportingDocuments] = useState<SupportingDocument[]>([]);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [loadingRequests, setLoadingRequests] = useState(true);
 
   const [requestType, setRequestType] = useState("ADDRESS_CHANGE");
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    BeneficiaryService.getChangeRequests()
+      .then((items) => {
+        if (active) setRequests(items);
+      })
+      .catch((error) => {
+        if (active) {
+          setRequestError(
+            error instanceof Error ? error.message : "Could not load your requests.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingRequests(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleCreateRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRequestError("");
     setIsSubmitting(true);
-    const newReq = await BeneficiaryService.submitChangeRequest({
-      beneficiaryId: user?.id || "BEN-USER",
-      beneficiaryName: user?.name || "Authenticated Citizen",
-      requestType: requestType as any,
-      reason,
-      previousData: { field: "Previous Record Data" },
-      requestedData: { field: "New Updated Citizen Data" },
-    });
-    setRequests([newReq, ...requests]);
-    setIsSubmitting(false);
-    setShowModal(false);
-    setReason("");
+    try {
+      const newReq = await BeneficiaryService.submitChangeRequest({
+        beneficiaryId: user?.id || "",
+        beneficiaryName: user?.name || "",
+        requestType: requestType as any,
+        reason,
+        previousData: { field: "Previous Record Data" },
+        requestedData: { field: "New Updated Citizen Data" },
+        supportingDocuments,
+      });
+      setRequests((current) => [newReq, ...current]);
+      setShowModal(false);
+      setReason("");
+      setSupportingDocuments([]);
+    } catch (error) {
+      setRequestError(
+        error instanceof Error ? error.message : "Could not submit your request.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const steps = [
@@ -60,7 +95,11 @@ export default function ChangeRequestsPage() {
         </div>
 
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setRequestError("");
+            setSupportingDocuments([]);
+            setShowModal(true);
+          }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
         >
           <Plus className="size-4" /> Submit New Request
@@ -73,6 +112,11 @@ export default function ChangeRequestsPage() {
             onSubmit={handleCreateRequest}
             className="responsive-modal-panel"
           >
+            {requestError && (
+              <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                {requestError}
+              </div>
+            )}
             <div className="responsive-modal-header flex items-center justify-between gap-3">
               <h3 className="min-w-0 font-bold text-sm sm:text-base">
                 Submit Attribute Change Request
@@ -141,8 +185,17 @@ export default function ChangeRequestsPage() {
                   without uploading one.
                 </p>
                 <DocumentBlockchainUpload
+                  onUploadStateChange={setIsUploadingDocument}
                   onUploadSuccess={(data) => {
-                    console.log("Document audit recorded:", data);
+                    setSupportingDocuments((current) => {
+                      const existingIndex = current.findIndex(
+                        (document) => document.documentId === data.documentId,
+                      );
+                      if (existingIndex === -1) return [...current, data];
+                      const updated = [...current];
+                      updated[existingIndex] = data;
+                      return updated;
+                    });
                   }}
                 />
               </div>
@@ -151,17 +204,23 @@ export default function ChangeRequestsPage() {
             <div className="responsive-modal-footer flex flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="button"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setSupportingDocuments([]);
+                  setRequestError("");
+                }}
                 className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isUploadingDocument}
                 className="px-5 py-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
               >
-                {isSubmitting
+                {isUploadingDocument
+                  ? "Finish document upload first"
+                  : isSubmitting
                   ? "Submitting..."
                   : "Confirm & Submit to Inspector"}
               </button>
@@ -171,7 +230,16 @@ export default function ChangeRequestsPage() {
       )}
 
       <div className="space-y-4">
-        {requests.length === 0 ? (
+        {requestError && !showModal && (
+          <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {requestError}
+          </p>
+        )}
+        {loadingRequests ? (
+          <div className="bg-card border border-border rounded-md p-8 text-center text-sm text-muted-foreground">
+            Loading your change requests...
+          </div>
+        ) : requests.length === 0 ? (
           <div className="bg-card border border-border rounded-md p-8 text-center space-y-2 shadow-subtle">
             <Send className="size-8 text-muted-foreground mx-auto opacity-50" />
             <h3 className="empty-state-title text-foreground">
@@ -204,6 +272,25 @@ export default function ChangeRequestsPage() {
               </div>
 
               <p className="text-xs text-muted-foreground">{req.reason}</p>
+
+              {req.supportingDocuments?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-foreground">Supporting documents</h4>
+                  {req.supportingDocuments.map((document) => (
+                    <a
+                      key={document.documentId}
+                      href={document.gatewayUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-w-0 items-center gap-2 rounded-md border border-border p-2 text-xs text-primary hover:bg-muted/40"
+                    >
+                      <FileText className="size-4 shrink-0" />
+                      <span className="truncate">{document.fileName}</span>
+                      <span className="ml-auto shrink-0 text-muted-foreground">Open IPFS</span>
+                    </a>
+                  ))}
+                </div>
+              )}
 
               <div className="grid grid-cols-4 gap-2 pt-2">
                 {steps.map((st, idx) => {
