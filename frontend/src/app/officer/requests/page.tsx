@@ -16,6 +16,24 @@ import {
   Loader2,
 } from "lucide-react";
 
+function formatAuditData(value: unknown): string {
+  const mask = (item: any): any => {
+    if (Array.isArray(item)) return item.map(mask);
+    if (!item || typeof item !== "object") return item;
+    return Object.fromEntries(Object.entries(item).map(([key, child]) => [
+      key,
+      /aadhaar/i.test(key) && typeof child === "string"
+        ? `XXXX XXXX ${child.slice(-4)}`
+        : mask(child),
+    ]));
+  };
+  try {
+    return JSON.stringify(mask(value), null, 2);
+  } catch {
+    return "Details unavailable";
+  }
+}
+
 export default function OfficerModificationRequestsPage() {
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedReqId, setSelectedReqId] = useState<string | null>(null);
@@ -58,6 +76,10 @@ export default function OfficerModificationRequestsPage() {
     actionType: "APPROVE" | "REJECT" | "ESCALATE",
   ) => {
     if (!selectedReqId || isReviewing) return;
+    if (!officerRemarks.trim()) {
+      setActionError("Add a review comment before approving, rejecting, or escalating this request.");
+      return;
+    }
     const statusMap = {
       APPROVE: "APPROVED" as const,
       REJECT: "REJECTED" as const,
@@ -174,13 +196,36 @@ export default function OfficerModificationRequestsPage() {
                       </span>
                     </div>
                     <h2 className="text-base font-bold text-foreground">
-                      {currentReq.beneficiary_id || "Citizen Record"}
+                      {currentReq.beneficiary_name || currentReq.beneficiary_id || "Citizen Record"}
                     </h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Beneficiary ID: <span className="font-mono">{currentReq.beneficiary_id || "—"}</span>
+                      {currentReq.beneficiary_email ? ` · ${currentReq.beneficiary_email}` : ""}
+                    </p>
+                    {(currentReq.ration_card_id || currentReq.jurisdiction) && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {currentReq.ration_card_id ? `Ration card: ${currentReq.ration_card_id}` : ""}
+                        {currentReq.ration_card_id && currentReq.jurisdiction ? " · " : ""}
+                        {currentReq.jurisdiction || ""}
+                      </p>
+                    )}
                   </div>
                   <RiskIndicator
                     score={currentReq.ai_risk_score || 5}
                     level="LOW"
                   />
+                </div>
+
+                <div className="rounded-md border border-border bg-muted/30 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-xs font-bold text-foreground">Beneficiary justification</h3>
+                    <span className="text-[11px] text-muted-foreground">
+                      Submitted {currentReq.submitted_at ? new Date(currentReq.submitted_at).toLocaleString() : "—"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">
+                    {currentReq.reason || "No justification provided."}
+                  </p>
                 </div>
 
                 <div className="space-y-3">
@@ -203,12 +248,12 @@ export default function OfficerModificationRequestsPage() {
                           </td>
                           <td className="px-4 py-3 text-destructive font-mono technical-value-wrap">
                             {typeof currentReq.previous_data === "object"
-                              ? JSON.stringify(currentReq.previous_data)
+                              ? formatAuditData(currentReq.previous_data)
                               : currentReq.previous_data || "Current Record"}
                           </td>
                           <td className="px-4 py-3 text-primary font-mono technical-value-wrap">
                             {typeof currentReq.requested_data === "object"
-                              ? JSON.stringify(currentReq.requested_data)
+                              ? formatAuditData(currentReq.requested_data)
                               : currentReq.requested_data ||
                                 currentReq.reason ||
                                 "New Value"}
@@ -268,7 +313,8 @@ export default function OfficerModificationRequestsPage() {
                     rows={2}
                     value={officerRemarks}
                     onChange={(e) => setOfficerRemarks(e.target.value)}
-                    placeholder="Enter mandatory field audit remarks before approval or rejection..."
+                    required
+                    placeholder="Required: enter review comments before approval or rejection..."
                     className="w-full bg-background border border-border rounded-md p-2.5 text-xs text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
                   />
 
@@ -279,14 +325,14 @@ export default function OfficerModificationRequestsPage() {
                       </p>
                     )}
                     <button
-                      disabled={isReviewing}
+                      disabled={isReviewing || !officerRemarks.trim()}
                       onClick={() => void handleExecuteAction("REJECT")}
                       className="px-4 py-2 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive text-xs font-bold uppercase rounded-md transition-all"
                     >
                       Reject Request
                     </button>
                     <button
-                      disabled={isReviewing}
+                      disabled={isReviewing || !officerRemarks.trim()}
                       onClick={() => void handleExecuteAction("APPROVE")}
                       className="px-5 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold uppercase tracking-wider rounded-md transition-all shadow-subtle"
                     >

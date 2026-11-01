@@ -115,7 +115,8 @@ export type ChangeRequestStatus =
   | "OFFICER_VERIFICATION"
   | "APPROVED"
   | "REJECTED"
-  | "ESCALATED";
+  | "ESCALATED"
+  | "WITHDRAWN";
 
 export interface SupportingDocument {
   documentId: string;

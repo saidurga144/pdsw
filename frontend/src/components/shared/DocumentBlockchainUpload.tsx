@@ -35,6 +35,7 @@ interface DocumentBlockchainUploadProps {
   }) => void;
   onUploadStateChange?: (uploading: boolean) => void;
   className?: string;
+  required?: boolean;
 }
 
 export const DocumentBlockchainUpload: React.FC<
@@ -44,6 +45,7 @@ export const DocumentBlockchainUpload: React.FC<
   onUploadSuccess,
   onUploadStateChange,
   className = "",
+  required = false,
 }) => {
   const { user, role } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,12 +226,14 @@ export const DocumentBlockchainUpload: React.FC<
             <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
               {isBlockchainRegistrationEnabled()
                 ? "Document IPFS & Sepolia Blockchain Registration"
-                : "Document IPFS Upload (Optional)"}
+                : `Document IPFS Upload (${required ? "Required" : "Optional"})`}
             </h4>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               {isBlockchainRegistrationEnabled()
                 ? "Dual-layer cryptographic provenance with Pinata IPFS and immutable Sepolia smart contracts"
-                : "Attach supporting documents. Upload is optional — you can submit your request without it."}
+                : required
+                  ? "Attach at least one supporting document to submit this request."
+                  : "Attach supporting documents. Upload is optional — you can submit your request without it."}
             </p>
           </div>
         </div>

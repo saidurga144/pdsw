@@ -1,12 +1,12 @@
 """Persist beneficiary change requests and their supporting IPFS references."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pymongo import ReturnDocument
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy import select
@@ -42,10 +42,133 @@ class ChangeRequestCreate(BaseModel):
         default_factory=list, max_length=10
     )
 
+    @field_validator("reason")
+    @classmethod
+    def reason_must_not_be_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("A reason is required for the selected request type.")
+        return value
+
+    @model_validator(mode="after")
+    def validate_type_specific_data(self):
+        requested = self.requested_data
+
+        def require_text(data: dict[str, Any], key: str, label: str) -> str:
+            value = data.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{label} is required.")
+            return value.strip()
+
+        def require_date(data: dict[str, Any], key: str, label: str) -> date:
+            value = require_text(data, key, label)
+            try:
+                return date.fromisoformat(value)
+            except ValueError as exc:
+                raise ValueError(f"{label} must be a valid date.") from exc
+
+        needs_document = False
+        if self.request_type == "ADDRESS_CHANGE":
+            for key, label in (
+                ("house_number", "New house or door number"),
+                ("street", "New street or village"),
+                ("mandal", "New mandal or taluk"),
+                ("district", "New district"),
+                ("state", "New state"),
+            ):
+                require_text(requested, key, label)
+            pin_code = require_text(requested, "pin_code", "New PIN code")
+            if not pin_code.isdigit() or len(pin_code) != 6:
+                raise ValueError("New PIN code must contain exactly 6 digits.")
+            needs_document = True
+        elif self.request_type == "FAMILY_ADDITION":
+            members = requested.get("family_members")
+            if not isinstance(members, list) or not 1 <= len(members) <= 10:
+                raise ValueError("Add between 1 and 10 family members.")
+            for index, member in enumerate(members, start=1):
+                if not isinstance(member, dict):
+                    raise ValueError(f"Family member {index} is invalid.")
+                for key, label in (
+                    ("full_name", "name"),
+                    ("relationship", "relationship"),
+                    ("date_of_birth", "date of birth"),
+                    ("gender", "gender"),
+                    ("aadhaar_number", "Aadhaar number"),
+                ):
+                    require_text(member, key, f"Family member {index} {label}")
+                aadhaar = member["aadhaar_number"].strip()
+                if not aadhaar.isdigit() or len(aadhaar) != 12:
+                    raise ValueError(
+                        f"Family member {index} Aadhaar number must contain 12 digits."
+                    )
+                birth_date = require_date(
+                    member, "date_of_birth", f"Family member {index} date of birth"
+                )
+                if birth_date > date.today():
+                    raise ValueError(f"Family member {index} date of birth cannot be in the future.")
+            needs_document = True
+        elif self.request_type == "FAMILY_REMOVAL":
+            require_text(requested, "member_id", "Family member")
+            removal_reason = require_text(requested, "removal_reason", "Removal reason")
+            if removal_reason not in {"MIGRATION", "DECEASED", "OTHER"}:
+                raise ValueError("Select a valid family member removal reason.")
+            if removal_reason in {"MIGRATION", "DECEASED"}:
+                removal_date = require_date(
+                    requested, "removal_date", "Date of migration or death"
+                )
+                if removal_date > date.today():
+                    raise ValueError("Date of migration or death cannot be in the future.")
+                needs_document = True
+            if removal_reason == "MIGRATION":
+                location = requested.get("new_location")
+                if not isinstance(location, dict):
+                    raise ValueError("New location details are required for migration.")
+                for key, label in (("district", "New district"), ("state", "New state")):
+                    require_text(location, key, label)
+        elif self.request_type == "CONTACT_UPDATE":
+            old_phone = "".join(
+                char for char in str(self.previous_data.get("phone", "")) if char.isdigit()
+            )[-10:]
+            if len(old_phone) != 10 or old_phone[0] not in "6789":
+                raise ValueError(
+                    "The current registered mobile number is missing or invalid. Update the beneficiary profile before requesting a change."
+                )
+            new_phone = require_text(requested, "phone", "New mobile number")
+            if len(new_phone) != 10 or not new_phone.isdigit() or new_phone[0] not in "6789":
+                raise ValueError("New mobile number must be a valid 10-digit Indian number.")
+            if old_phone and new_phone == old_phone:
+                raise ValueError("New mobile number must differ from the existing number.")
+        elif self.request_type == "MIGRATION_TRANSFER":
+            for key, label in (
+                ("destination_state", "Destination state"),
+                ("destination_district", "Destination district"),
+                ("destination_mandal", "Destination mandal or taluk"),
+                ("new_address", "New residential address"),
+            ):
+                require_text(requested, key, label)
+            expected_date = require_date(
+                requested, "expected_migration_date", "Expected migration date"
+            )
+            if expected_date < date.today():
+                raise ValueError("Expected migration date cannot be in the past.")
+            needs_document = True
+
+        if needs_document and not self.supporting_documents:
+            raise ValueError("Upload at least one supporting document for this request.")
+        return self
+
 
 class ChangeRequestReview(BaseModel):
     status: Literal["UNDER_REVIEW", "APPROVED", "REJECTED", "ESCALATED"]
-    review_notes: str = Field(default="", max_length=2000)
+    review_notes: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("review_notes")
+    @classmethod
+    def review_notes_must_not_be_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("An officer review comment is required.")
+        return value
 
 
 def _mongo_collection():
@@ -53,6 +176,23 @@ def _mongo_collection():
         return get_mongo_db()["change_requests"]
     except RuntimeError:
         return None
+
+
+def _mask_sensitive_values(value: Any) -> Any:
+    """Mask Aadhaar values before request data is persisted or returned."""
+    if isinstance(value, list):
+        return [_mask_sensitive_values(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+
+    masked: dict[str, Any] = {}
+    for key, item in value.items():
+        if "aadhaar" in str(key).lower() and isinstance(item, str):
+            digits = "".join(character for character in item if character.isdigit())
+            masked[key] = f"XXXX XXXX {digits[-4:]}" if len(digits) == 12 else "[REDACTED]"
+        else:
+            masked[key] = _mask_sensitive_values(item)
+    return masked
 
 
 def _serialize(record: ChangeRequestRecord) -> dict[str, Any]:
@@ -161,8 +301,8 @@ async def create_change_request(
         "ration_card_id": current_user.get("ration_card_id", ""),
         "jurisdiction": current_user.get("jurisdiction", ""),
         "request_type": payload.request_type,
-        "previous_data": payload.previous_data,
-        "requested_data": payload.requested_data,
+        "previous_data": _mask_sensitive_values(payload.previous_data),
+        "requested_data": _mask_sensitive_values(payload.requested_data),
         "reason": payload.reason,
         "supporting_documents": [
             document.model_dump() for document in payload.supporting_documents
@@ -285,6 +425,108 @@ async def list_ipfs_documents(
             )
     documents.sort(key=lambda item: item["submittedAt"] or "", reverse=True)
     return {"success": True, "documents": documents[:500]}
+
+
+@router.patch("/{request_id}/withdraw")
+async def withdraw_change_request(
+    request_id: str,
+    current_user: dict = Depends(require_roles(["BENEFICIARY"])),
+    db: AsyncSession = Depends(get_db),
+):
+    """Allow the owning beneficiary to withdraw a request before review begins."""
+    user_id = str(current_user.get("_id") or current_user.get("id") or "")
+    now = datetime.now(timezone.utc)
+    withdrawn_at = now.isoformat()
+
+    collection = _mongo_collection()
+    if collection is not None:
+        try:
+            mongo_record = await run_in_threadpool(
+                lambda: collection.find_one(
+                    {"id": request_id},
+                    {"_id": 0, "beneficiary_id": 1, "status": 1},
+                )
+            )
+            if mongo_record:
+                if str(mongo_record.get("beneficiary_id")) != user_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Change request not found.",
+                    )
+                if mongo_record.get("status") != "SUBMITTED":
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Only submitted requests can be withdrawn.",
+                    )
+
+                updated = await run_in_threadpool(
+                    lambda: collection.find_one_and_update(
+                        {
+                            "id": request_id,
+                            "beneficiary_id": user_id,
+                            "status": "SUBMITTED",
+                        },
+                        {
+                            "$set": {
+                                "status": "WITHDRAWN",
+                                "review_notes": "Withdrawn by beneficiary.",
+                                "reviewed_by": user_id,
+                                "reviewed_at": withdrawn_at,
+                            }
+                        },
+                        return_document=ReturnDocument.AFTER,
+                        projection={"_id": 0},
+                    )
+                )
+                if updated:
+                    return {"success": True, "request": updated}
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="The request changed before it could be withdrawn. Refresh and try again.",
+                )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.warning(
+                "MongoDB request withdrawal failed; trying SQL fallback: %s", exc
+            )
+
+    try:
+        result = await db.execute(
+            select(ChangeRequestRecord).where(
+                ChangeRequestRecord.id == request_id,
+                ChangeRequestRecord.beneficiary_id == user_id,
+            )
+        )
+        record = result.scalars().first()
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Change request not found.",
+            )
+        if record.status != "SUBMITTED":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Only submitted requests can be withdrawn.",
+            )
+
+        record.status = "WITHDRAWN"
+        record.review_notes = "Withdrawn by beneficiary."
+        record.reviewed_by = user_id
+        record.reviewed_at = now.replace(tzinfo=None)
+        await db.commit()
+        await db.refresh(record)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as exc:
+        await db.rollback()
+        logger.exception("Could not withdraw beneficiary change request")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to withdraw the request from the configured database.",
+        ) from exc
+
+    return {"success": True, "request": _serialize(record)}
 
 
 @router.patch("/{request_id}/review")

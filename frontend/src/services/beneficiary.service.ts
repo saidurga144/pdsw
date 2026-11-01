@@ -193,7 +193,7 @@ export class BeneficiaryService {
   static async updateChangeRequestStatus(
     id: string,
     status: ChangeRequest["status"],
-    remarks?: string,
+    remarks: string,
   ): Promise<ChangeRequest> {
     const res = await apiClient.post(`/officer/requests/${id}/review`, {
       requestId: id,
@@ -203,6 +203,18 @@ export class BeneficiaryService {
     if (!res.data?.success || !res.data?.request) {
       throw new Error(
         res.data?.detail || res.data?.error || "Could not update the request.",
+      );
+    }
+    return mapChangeRequest(res.data.request);
+  }
+
+  static async withdrawChangeRequest(id: string): Promise<ChangeRequest> {
+    const res = await apiClient.patch(
+      `/beneficiary/requests/${encodeURIComponent(id)}/withdraw`,
+    );
+    if (!res.data?.success || !res.data?.request) {
+      throw new Error(
+        res.data?.detail || res.data?.error || "Could not withdraw the request.",
       );
     }
     return mapChangeRequest(res.data.request);
