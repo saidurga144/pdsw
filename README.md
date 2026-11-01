@@ -63,7 +63,7 @@ The PDSW architecture consists of the following major components:
 7. Security and audit mechanisms help monitor system activities.
 
 
-## 6. Prerequisites
+## 5. Prerequisites
 
 Install the following tools before running the application:
 
@@ -75,7 +75,7 @@ Install the following tools before running the application:
 * Pinata account
 * Sepolia test network access
 
-## 8. Installation and Setup
+## 6. Installation and Setup
 
 ### Step 1: Clone the Repository
 
@@ -151,7 +151,7 @@ npm install
 ```
 
 
-## 9. Environment Variables
+## 7. Environment Variables
 
 
 ### Backend Environment
@@ -191,7 +191,7 @@ PINATA_SERVICE_URL=your_render_pinata_service_url
 
 
 
-## 10. Security Considerations
+## 8. Security Considerations
 
 * Enforce role-based authorization on backend endpoints.
 * Validate user input and uploaded files.
@@ -202,7 +202,7 @@ PINATA_SERVICE_URL=your_render_pinata_service_url
 * Protect beneficiary information from unauthorized access.
 * Maintain audit records for important operations.
 
-## 11. Testing
+## 9. Testing
 
 Test the following areas before production deployment:
 
@@ -217,7 +217,7 @@ Test the following areas before production deployment:
 * AI-based anomaly detection.
 * API security and error handling.
 
-## 12. Future Enhancements
+## 10. Future Enhancements
 
 * Advanced AI-based fraud detection.
 * Improved security event correlation.
@@ -226,7 +226,7 @@ Test the following areas before production deployment:
 * Advanced audit analytics.
 * Improved performance and scalability.
 
-## 13. Contributors
+## 11. Contributors
 
 **Project:** Public Distribution System Welfare Platform (PDSW)
 
@@ -237,6 +237,6 @@ Test the following areas before production deployment:
 
 **Institution:** Kalasalingam Academy of Research and Education
 
-## 15. License
+## 12. License
 
 This project is developed for academic research and educational purposes. Licensing and reuse permissions should be defined by the project owners.
