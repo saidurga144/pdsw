@@ -5,6 +5,7 @@ import logging
 import secrets
 from typing import Any, Optional
 
+from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -265,6 +266,7 @@ async def hard_delete_user(db: AsyncSession, user_id: str) -> bool:
 
 
 _MEMORY_RESET_TOKENS: dict[str, dict[str, Any]] = {}
+_MEMORY_ONLY_RESET_TOKENS: set[str] = set()
 
 
 async def create_password_reset_token(
@@ -277,8 +279,8 @@ async def create_password_reset_token(
         "token": token,
         "user_id": user_id,
         "email": email.strip().lower(),
-        "created_at": now.isoformat() + "Z",
-        "expires_at": expires_at.isoformat() + "Z",
+        "created_at": now.isoformat().replace("+00:00", "Z"),
+        "expires_at": expires_at.isoformat().replace("+00:00", "Z"),
         "used": False,
     }
     users_col = _mongo_collection_or_none()
@@ -286,10 +288,16 @@ async def create_password_reset_token(
         try:
             db_mongo = users_col.database
             db_mongo["password_resets"].insert_one(dict(record))
-        except Exception as exc:
-            logger.warning("Failed to persist reset token in MongoDB: %s", exc)
-
-    _MEMORY_RESET_TOKENS[token] = record
+        except Exception:
+            # Do not include exception details: drivers may include document values.
+            logger.warning(
+                "Failed to persist password reset token in MongoDB; using process-local fallback."
+            )
+            _MEMORY_RESET_TOKENS[token] = record
+            _MEMORY_ONLY_RESET_TOKENS.add(token)
+    else:
+        _MEMORY_RESET_TOKENS[token] = record
+        _MEMORY_ONLY_RESET_TOKENS.add(token)
     return token
 
 
@@ -297,33 +305,58 @@ async def verify_and_burn_password_reset_token(
     db: AsyncSession, token: str
 ) -> Optional[dict[str, Any]]:
     now_utc = datetime.datetime.now(datetime.timezone.utc)
+
+    if token in _MEMORY_ONLY_RESET_TOKENS:
+        mem_doc = _MEMORY_RESET_TOKENS.get(token)
+        if not mem_doc or mem_doc.get("used"):
+            return None
+        try:
+            expires_at = _parse_reset_expiration(mem_doc.get("expires_at", ""))
+        except (TypeError, ValueError):
+            return None
+        if expires_at <= now_utc:
+            return None
+        mem_doc["used"] = True
+        mem_doc["used_at"] = now_utc.isoformat().replace("+00:00", "Z")
+        return mem_doc
+
     users_col = _mongo_collection_or_none()
     if users_col is not None:
         try:
             db_mongo = users_col.database
-            doc = db_mongo["password_resets"].find_one({"token": token, "used": False})
+            collection = db_mongo["password_resets"]
+            doc = collection.find_one({"token": token, "used": False})
             if doc:
-                exp_str = doc.get("expires_at", "")
-                if exp_str:
-                    exp = datetime.datetime.fromisoformat(
-                        exp_str.replace("Z", "+00:00")
-                    )
-                    if exp > now_utc:
-                        db_mongo["password_resets"].update_one(
-                            {"_id": doc["_id"]}, {"$set": {"used": True}}
-                        )
-                        return doc
-                return None
-        except Exception as exc:
-            logger.warning("Mongo reset token lookup failed: %s", exc)
-
-    mem_doc = _MEMORY_RESET_TOKENS.get(token)
-    if mem_doc and not mem_doc.get("used"):
-        exp_str = mem_doc.get("expires_at", "")
-        if exp_str:
-            exp = datetime.datetime.fromisoformat(exp_str.replace("Z", "+00:00"))
-            if exp > now_utc:
-                mem_doc["used"] = True
-                return mem_doc
+                expiration = doc.get("expires_at", "")
+                expires_at = _parse_reset_expiration(expiration)
+                if expires_at <= now_utc:
+                    return None
+                # Consume the token atomically so simultaneous requests cannot both use it.
+                return collection.find_one_and_update(
+                    {
+                        "_id": doc["_id"],
+                        "used": False,
+                        "expires_at": expiration,
+                    },
+                    {
+                        "$set": {
+                            "used": True,
+                            "used_at": now_utc.isoformat().replace("+00:00", "Z"),
+                        }
+                    },
+                    return_document=ReturnDocument.BEFORE,
+                )
+        except Exception:
+            logger.warning("MongoDB password reset token lookup failed.")
 
     return None
+
+
+def _parse_reset_expiration(value: str) -> datetime.datetime:
+    normalized = value[:-1] if value.endswith("+00:00Z") else value
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    expiration = datetime.datetime.fromisoformat(normalized)
+    if expiration.tzinfo is None:
+        expiration = expiration.replace(tzinfo=datetime.timezone.utc)
+    return expiration.astimezone(datetime.timezone.utc)

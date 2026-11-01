@@ -292,8 +292,11 @@ async def admin_initiate_password_reset(
     )
     return {
         "success": True,
-        "message": f"Password reset link generated for {target_user['email']}. Deliver it to the user out-of-band.",
+        "message": f"Password reset link generated for {target_user['email']}. Share it securely with the user.",
         "email": target_user["email"],
+        "reset_token": token,
+        "reset_url": f"/reset-password?token={token}",
+        "expires_in_minutes": 15,
     }
 
 

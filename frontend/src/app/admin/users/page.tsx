@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Users,
   UserPlus,
@@ -76,7 +76,9 @@ export default function UserDirectoryPage() {
     reset_url: string;
   } | null>(null);
   const [isResetting, setIsResetting] = useState<string | null>(null);
+  const resetRequestInFlight = useRef(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [resetLinkError, setResetLinkError] = useState("");
   const [actionNotice, setActionNotice] = useState<{
     type: "success" | "error";
     message: string;
@@ -228,7 +230,10 @@ export default function UserDirectoryPage() {
   };
 
   const handleInitiatePasswordReset = async (u: UserRecord) => {
+    if (resetRequestInFlight.current) return;
+    resetRequestInFlight.current = true;
     setIsResetting(u.id);
+    setResetLinkError("");
     setActionNotice(null);
 
     try {
@@ -241,10 +246,27 @@ export default function UserDirectoryPage() {
       );
       const data = await res.json();
       if (res.ok && data.success) {
+        const resetToken =
+          typeof data.reset_token === "string" ? data.reset_token : "";
+        const responseUrl =
+          typeof data.reset_url === "string" && data.reset_url.trim()
+            ? data.reset_url.trim()
+            : resetToken
+              ? `/reset-password?token=${encodeURIComponent(resetToken)}`
+              : "";
+        if (!resetToken || !responseUrl) {
+          throw new Error(
+            "The backend did not return a reset link. Confirm the latest backend deployment is active and try again.",
+          );
+        }
+        const resolvedUrl = new URL(responseUrl, window.location.origin);
+        if (resolvedUrl.origin !== window.location.origin) {
+          throw new Error("The backend returned an invalid reset link.");
+        }
         setResetModalData({
           user: u,
-          reset_token: data.reset_token,
-          reset_url: data.reset_url,
+          reset_token: resetToken,
+          reset_url: resolvedUrl.toString(),
         });
       } else {
         setActionNotice({
@@ -260,16 +282,33 @@ export default function UserDirectoryPage() {
       });
       setTimeout(() => setActionNotice(null), 4000);
     } finally {
+      resetRequestInFlight.current = false;
       setIsResetting(null);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    const fullUrl =
-      typeof window !== "undefined" ? `${window.location.origin}${text}` : text;
-    navigator.clipboard.writeText(fullUrl);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    try {
+      const fullUrl = new URL(text, window.location.origin).toString();
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fullUrl);
+      } else {
+        const fallback = document.createElement("textarea");
+        fallback.value = fullUrl;
+        fallback.style.position = "fixed";
+        fallback.style.opacity = "0";
+        document.body.appendChild(fallback);
+        fallback.select();
+        const copied = document.execCommand("copy");
+        fallback.remove();
+        if (!copied) throw new Error("Clipboard copy is unavailable.");
+      }
+      setCopiedLink(true);
+      setResetLinkError("");
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      setResetLinkError("Could not copy the reset link. Select and copy the link manually.");
+    }
   };
 
   const filteredUsers = users.filter((u) => {
@@ -478,7 +517,7 @@ export default function UserDirectoryPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleInitiatePasswordReset(u)}
-                          disabled={isResetting === u.id}
+                          disabled={Boolean(isResetting)}
                           className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-cyan-400 rounded transition-colors border border-slate-700"
                           title="Send Password Reset"
                           aria-label="Send password reset"
@@ -843,13 +882,14 @@ export default function UserDirectoryPage() {
                 <span className="text-slate-400 block mb-1">
                   One-Time Reset URL (15 Minute Expiration):
                 </span>
-                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg p-2.5 font-mono text-[11px] text-cyan-400 break-all">
-                  <span className="flex-1 select-all">
-                    {resetModalData.reset_url}
+                <div className="flex min-w-0 items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg p-2.5 font-mono text-[11px] text-cyan-300">
+                  <span className="min-w-0 flex-1 select-all break-all leading-relaxed" title={resetModalData.reset_url}>
+                    {resetModalData.reset_url || "Reset link unavailable."}
                   </span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(resetModalData.reset_url)}
+                    aria-label={copiedLink ? "Reset link copied" : "Copy reset link"}
                     className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 shrink-0"
                     title="Copy Link"
                   >
@@ -860,6 +900,8 @@ export default function UserDirectoryPage() {
                     )}
                   </button>
                 </div>
+                {copiedLink && <p role="status" className="mt-1 text-[11px] text-emerald-300">Reset link copied.</p>}
+                {resetLinkError && <p role="alert" className="mt-1 text-[11px] text-rose-300">{resetLinkError}</p>}
               </div>
 
               <div className="flex items-center justify-end pt-3 border-t border-slate-800">
