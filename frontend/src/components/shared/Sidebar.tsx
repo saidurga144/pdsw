@@ -279,25 +279,15 @@ export const Sidebar: React.FC = () => {
             sidebarCollapsed && "flex-col justify-center gap-1 px-2 py-2",
           )}
         >
-          <Link
-            href={canonicalRole ? getDashboardNavGroups(role)[0]?.items[0]?.href || "/" : "/"}
-            aria-label="PDS Welfare Platform home"
-            title={sidebarCollapsed ? "PDS Welfare Platform" : undefined}
-            className={cn(
-              "flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary",
-              sidebarCollapsed && "justify-center",
-            )}
-          >
-            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--glass-border)] bg-white shadow-subtle">
-              <img src="/logo.png" alt="" className="size-full object-cover" />
-            </span>
-            {!sidebarCollapsed && (
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-bold leading-4 text-foreground">PDSW</span>
-                <span className="block truncate text-[0.64rem] leading-4 text-muted-foreground">{roleLabel} portal</span>
-              </span>
-            )}
-          </Link>
+          {!sidebarCollapsed && (
+            <Link
+              href={canonicalRole ? getDashboardNavGroups(role)[0]?.items[0]?.href || "/" : "/"}
+              aria-label={`Go to ${roleLabel} dashboard`}
+              className="min-w-0 truncate rounded-lg text-sm font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {roleLabel} portal
+            </Link>
+          )}
           <GlassSidebarToggle />
         </GlassSidebarHeader>
 
@@ -332,15 +322,10 @@ export const Sidebar: React.FC = () => {
             <Link
               href={canonicalRole ? getDashboardNavGroups(role)[0]?.items[0]?.href || "/" : "/"}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label={`Go to ${roleLabel} dashboard`}
+              className="min-w-0 truncate rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--glass-border)] bg-white shadow-subtle">
-                <img src="/logo.png" alt="" className="size-full object-cover" />
-              </span>
-              <span className="min-w-0">
-                <span id="pdsw-mobile-sidebar-title" className="block truncate text-sm font-bold text-foreground">PDS Welfare Platform</span>
-                <span className="block truncate text-xs text-muted-foreground">{roleLabel}</span>
-              </span>
+              <span id="pdsw-mobile-sidebar-title" className="block truncate text-sm font-semibold text-foreground">{roleLabel} portal</span>
             </Link>
             <button
               ref={mobileCloseButtonRef}

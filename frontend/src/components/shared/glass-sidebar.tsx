@@ -211,13 +211,15 @@ export function GlassSidebarItem({
           className="pointer-events-none absolute inset-0 rounded-xl border border-primary/15 bg-primary/10 shadow-[inset_0_1px_0_var(--glass-highlight)]"
         />
       )}
-      <Icon
-        aria-hidden="true"
-        className={cn(
-          "relative z-10 size-[1.125rem] shrink-0 transition-colors",
-          active ? "text-primary" : "text-current",
-        )}
-      />
+      {collapsed && (
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            "relative z-10 size-[1.125rem] shrink-0 transition-colors",
+            active ? "text-primary" : "text-current",
+          )}
+        />
+      )}
       <AnimatePresence initial={false} mode="wait">
         {collapsed ? (
           <span key="sr-label" className="sr-only">
