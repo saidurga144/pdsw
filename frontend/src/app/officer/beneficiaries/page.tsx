@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   PackageOpen,
   Loader2,
+  RefreshCw,
   Eye,
   EyeOff,
   AlertCircle,
@@ -225,7 +226,12 @@ export default function OfficerBeneficiaryManagementPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setCreateError(data.error || "Failed to create beneficiary account.");
+        const message =
+          data.error || "Failed to create beneficiary account.";
+        setCreateError(message);
+        if (message.includes("already assigned to your officer account")) {
+          await loadBeneficiaries();
+        }
         return;
       }
       setCreateSuccess(`Account for ${form.fullName} created successfully.`);
@@ -404,15 +410,28 @@ export default function OfficerBeneficiaryManagementPage() {
             Create, edit, reset password, or deactivate beneficiary accounts
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetWizard();
-            setShowWizard(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
-        >
-          <Plus className="size-4" /> Register New Beneficiary
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={loadBeneficiaries}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            aria-label="Refresh beneficiary list"
+            title="Refresh beneficiary list"
+          >
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={() => {
+              resetWizard();
+              setShowWizard(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider rounded-md transition-all shadow-subtle"
+          >
+            <Plus className="size-4" /> Register New Beneficiary
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -466,7 +485,7 @@ export default function OfficerBeneficiaryManagementPage() {
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             {search
               ? "No beneficiaries match your search."
-              : 'Click "Register New Beneficiary" above to onboard citizens.'}
+              : 'No beneficiary accounts are assigned to your officer account yet. Register a new account above, or ask an Admin to assign an existing account from Admin User Directory.'}
           </p>
         </div>
       ) : (

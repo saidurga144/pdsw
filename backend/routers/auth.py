@@ -378,9 +378,39 @@ async def officer_create_beneficiary(
 
     existing = await find_user_by_email(db, clean_email)
     if existing:
+        existing_role = canonicalize_role(existing.get("role", ""))
+        if existing_role == "BENEFICIARY":
+            current_user_id = str(
+                current_officer.get("_id") or current_officer.get("id") or ""
+            )
+            assigned_officer_id = str(
+                existing.get("assigned_pds_officer_id") or ""
+            )
+            if current_user_id and assigned_officer_id == current_user_id:
+                detail = (
+                    "This beneficiary account is already assigned to your officer "
+                    "account. The list was refreshed; close this form to view it."
+                )
+            elif canonicalize_role(current_officer.get("role", "")) == "PDS_OFFICER":
+                detail = (
+                    "A beneficiary account with this email already exists. Ask an "
+                    "administrator to assign it to your officer account from Admin "
+                    "User Directory. Do not create a duplicate account."
+                )
+            else:
+                detail = (
+                    "A beneficiary account with this email already exists. Assign "
+                    "the existing account from Admin User Directory instead of "
+                    "creating a duplicate."
+                )
+        else:
+            detail = (
+                "An account with this email already exists "
+                f"(role: {existing_role or 'UNKNOWN'})."
+            )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"An account with this email already exists (role: {existing.get('role')}).",
+            detail=detail,
         )
 
     clean_wallet = (

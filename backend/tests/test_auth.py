@@ -629,6 +629,22 @@ async def test_officer_assignment_isolation_for_accounts_and_requests():
             beneficiary_a_id
         ]
 
+        duplicate_unassigned = await client.post(
+            "/api/auth/officer/create-beneficiary",
+            headers=officer_a_headers,
+            json={
+                "email": f"{legacy_beneficiary_id}@pds.gov.in",
+                "password": "AssignmentTest2026!",
+                "full_name": "Legacy Beneficiary",
+                "jurisdiction": "Delhi",
+            },
+        )
+        assert duplicate_unassigned.status_code == 409
+        assert "administrator to assign" in duplicate_unassigned.json()["detail"]
+        async with database.AsyncSessionLocal() as db:
+            still_unassigned = await find_user_by_id(db, legacy_beneficiary_id)
+        assert still_unassigned["assigned_pds_officer_id"] is None
+
         assigned_legacy = await client.patch(
             f"/api/auth/admin/users/{legacy_beneficiary_id}/assignment",
             headers=admin_headers,
@@ -711,6 +727,20 @@ async def test_officer_assignment_isolation_for_accounts_and_requests():
         assert beneficiary_a_id in {
             item["id"] for item in list_b_after.json()["beneficiaries"]
         }
+        requests_a_after = await client.get(
+            "/api/requests/officer", headers=officer_a_headers
+        )
+        assert requests_a_after.status_code == 200
+        assert f"CR-{suffix}-A" not in {
+            item["id"] for item in requests_a_after.json()["requests"]
+        }
+        requests_b_after = await client.get(
+            "/api/requests/officer", headers=officer_b_headers
+        )
+        assert requests_b_after.status_code == 200
+        assert f"CR-{suffix}-A" in {
+            item["id"] for item in requests_b_after.json()["requests"]
+        }
 
 
 @pytest.mark.asyncio
@@ -786,6 +816,22 @@ async def test_officer_list_shows_the_same_persisted_beneficiary_as_admin():
         )
         assert created.status_code == 201, created.text
         created_user = created.json()
+
+        duplicate_create = await client.post(
+            "/api/auth/officer/create-beneficiary",
+            json={
+                "email": beneficiary_email,
+                "password": password,
+                "full_name": "Persistent Beneficiary",
+                "phone": "9876543210",
+                "jurisdiction": "Delhi",
+            },
+            headers={"Authorization": f"Bearer {officer_token}"},
+        )
+        assert duplicate_create.status_code == 409
+        assert "list was refreshed" in duplicate_create.json()[
+            "detail"
+        ]
 
         officer_list = await client.get(
             "/api/auth/officer/beneficiaries",

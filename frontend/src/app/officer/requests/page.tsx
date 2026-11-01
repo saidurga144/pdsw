@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { BeneficiaryService } from "@/services/beneficiary.service";
 import { RiskIndicator } from "@/components/dashboard/RiskIndicator";
 import { apiClient } from "@/services/api/client";
@@ -14,6 +14,7 @@ import {
   Cpu,
   PackageOpen,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 function formatAuditData(value: unknown): string {
@@ -43,31 +44,37 @@ export default function OfficerModificationRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  useEffect(() => {
-    async function loadRequests() {
-      try {
-        const res = await apiClient.get("/officer/requests");
-        if (res.data?.success && Array.isArray(res.data.requests)) {
-          setRequests(res.data.requests);
-          setLoadError("");
-          if (res.data.requests.length > 0) {
-            setSelectedReqId(res.data.requests[0].id);
-          }
-        } else {
-          throw new Error(res.data?.detail || res.data?.error || "Could not load requests.");
-        }
-      } catch (error) {
-        setRequests([]);
-        setLoadError(
-          error instanceof Error ? error.message : "Could not load requests.",
+  const loadRequests = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const res = await apiClient.get("/officer/requests");
+      if (res.data?.success && Array.isArray(res.data.requests)) {
+        setRequests(res.data.requests);
+        setSelectedReqId((currentId) =>
+          res.data.requests.some((request: any) => request.id === currentId)
+            ? currentId
+            : res.data.requests[0]?.id || null,
         );
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error(
+          res.data?.detail || res.data?.error || "Could not load requests.",
+        );
       }
+    } catch (error) {
+      setRequests([]);
+      setSelectedReqId(null);
+      setLoadError(
+        error instanceof Error ? error.message : "Could not load requests.",
+      );
+    } finally {
+      setLoading(false);
     }
-
-    loadRequests();
   }, []);
+
+  useEffect(() => {
+    void loadRequests();
+  }, [loadRequests]);
 
   const currentReq =
     requests.find((r) => r.id === selectedReqId) || requests[0];
@@ -110,14 +117,27 @@ export default function OfficerModificationRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-border pb-4">
-        <h1 className="text-xl font-bold text-foreground">
-          Beneficiary Modification Requests & Field Diff Review
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Validate requested field changes against historical database snapshots
-          & AI risk flags
-        </p>
+      <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">
+            Beneficiary Modification Requests & Field Diff Review
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            Validate requested field changes against historical database snapshots
+            & AI risk flags
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={loadRequests}
+          disabled={loading}
+          className="inline-flex shrink-0 items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          aria-label="Refresh modification requests"
+          title="Refresh modification requests"
+        >
+          <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
       </div>
 
       {loading ? (
@@ -139,10 +159,9 @@ export default function OfficerModificationRequestsPage() {
               Queue Empty (0 Items)
             </h3>
             <p className="empty-state-description text-muted-foreground max-w-sm mx-auto">
-              No beneficiary modification requests in queue. When citizens
-              submit address changes, family member updates, or category
-              migrations, they will appear here for officer review and
-              cryptographic state signing.
+              No modification requests are assigned to your officer account.
+              If you expected a beneficiary or request here, ask an Admin to
+              assign that beneficiary to your account in Admin User Directory.
             </p>
           </div>
         </div>
