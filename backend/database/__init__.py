@@ -58,10 +58,19 @@ def _ensure_beneficiary_assignment_schema(connection):
         return
 
     columns = {column["name"] for column in inspector.get_columns("users")}
-    if "assigned_pds_officer_id" not in columns:
-        connection.exec_driver_sql(
-            "ALTER TABLE users ADD COLUMN assigned_pds_officer_id VARCHAR(64)"
-        )
+    additions = {
+        "assigned_pds_officer_id": "VARCHAR(64)",
+        "ration_card_number": "VARCHAR(100)",
+        "card_category": "VARCHAR(20)",
+        "address_data": "JSON",
+        "monthly_income": "INTEGER",
+        "verification_status": "VARCHAR(30)",
+    }
+    for name, column_type in additions.items():
+        if name not in columns:
+            connection.exec_driver_sql(
+                f"ALTER TABLE users ADD COLUMN {name} {column_type}"
+            )
     connection.exec_driver_sql(
         "CREATE INDEX IF NOT EXISTS idx_users_assigned_pds_officer_id "
         "ON users (assigned_pds_officer_id)"

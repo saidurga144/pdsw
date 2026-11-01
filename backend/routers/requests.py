@@ -9,13 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pymongo import ReturnDocument
 from starlette.concurrency import run_in_threadpool
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.database.mongodb import get_mongo_db
-from backend.models import ChangeRequestRecord
+from backend.models import ChangeRequestRecord, FamilyMemberRecord
 from backend.auth.user_store import (
     find_beneficiary_ids_assigned_to_officer,
     find_user_by_id,
@@ -23,6 +23,8 @@ from backend.auth.user_store import (
 from backend.logger.audit import log_action
 from backend.rbac.dependencies import require_roles
 from backend.rbac.roles import canonicalize_role
+from backend.routers.portal import add_risk_alert
+from backend.routers.portal import add_notification
 
 logger = logging.getLogger("pdsw.requests")
 router = APIRouter(prefix="/requests", tags=["Beneficiary Change Requests"])
@@ -304,7 +306,7 @@ async def create_change_request(
             or "Beneficiary"
         ),
         "beneficiary_email": current_user.get("email", ""),
-        "ration_card_id": current_user.get("ration_card_id", ""),
+        "ration_card_id": current_user.get("ration_card_number", ""),
         "jurisdiction": current_user.get("jurisdiction", ""),
         "request_type": payload.request_type,
         "previous_data": _mask_sensitive_values(payload.previous_data),
@@ -328,6 +330,12 @@ async def create_change_request(
             # whose JSON encoder cannot serialize a BSON ObjectId.
             mongo_record = dict(record_data)
             await run_in_threadpool(lambda: collection.insert_one(mongo_record))
+            await add_notification(
+                db, user_id, "Change request submitted",
+                f"Request {request_id} was submitted and is awaiting review.",
+                "INFO", "CHANGE_REQUEST", request_id,
+            )
+            await db.commit()
             return {"success": True, **record_data}
         except Exception as exc:
             logger.warning(
@@ -338,6 +346,11 @@ async def create_change_request(
 
     try:
         db.add(record)
+        await add_notification(
+            db, user_id, "Change request submitted",
+            f"Request {request_id} was submitted and is awaiting review.",
+            "INFO", "CHANGE_REQUEST", request_id,
+        )
         await db.commit()
         await db.refresh(record)
     except SQLAlchemyError as exc:
@@ -352,6 +365,79 @@ async def create_change_request(
         ) from exc
 
     return {"success": True, **_serialize(record)}
+
+
+async def _apply_approved_request(db: AsyncSession, request_record: dict) -> None:
+    """Apply only the validated fields for an approved request to its owner record."""
+    user_id = str(request_record.get("beneficiary_id") or "")
+    request_type = request_record.get("request_type")
+    requested = request_record.get("requested_data") or {}
+    existing_user = await find_user_by_id(db, user_id)
+    if not existing_user:
+        raise HTTPException(status_code=409, detail="The beneficiary account no longer exists.")
+
+    if request_type == "CONTACT_UPDATE":
+        phone = "".join(ch for ch in str(requested.get("phone", "")) if ch.isdigit())[-10:]
+        if len(phone) != 10:
+            raise HTTPException(status_code=409, detail="The approved contact number is invalid.")
+        await update_user(db, user_id, {"phone": phone})
+    elif request_type in {"ADDRESS_CHANGE", "MIGRATION_TRANSFER"}:
+        address = existing_user.get("address_data")
+        address = dict(address) if isinstance(address, dict) else {}
+        updates: dict[str, Any] = {"address_data": address}
+        previous_location = (str(address.get("district") or existing_user.get("jurisdiction") or "").strip().lower(), str(address.get("state") or "").strip().lower())
+        if request_type == "ADDRESS_CHANGE":
+            address.update({
+                "door_no": requested.get("house_number", ""),
+                "street": requested.get("street", ""),
+                "mandal": requested.get("mandal", ""),
+                "district": requested.get("district", ""),
+                "state": requested.get("state", ""),
+                "pincode": requested.get("pin_code", ""),
+            })
+            jurisdiction = ", ".join(filter(None, [address.get("district"), address.get("state")]))
+        else:
+            address.update({
+                "street": requested.get("new_address", ""),
+                "mandal": requested.get("destination_mandal", ""),
+                "district": requested.get("destination_district", ""),
+                "state": requested.get("destination_state", ""),
+                "pds_center_id": "",
+                "pds_center_name": "",
+            })
+            jurisdiction = ", ".join(filter(None, [address.get("district"), address.get("state")]))
+        next_location = (str(address.get("district") or "").strip().lower(), str(address.get("state") or "").strip().lower())
+        updates.update({"address_data": address, "jurisdiction": jurisdiction})
+        if request_type == "MIGRATION_TRANSFER" or previous_location != next_location:
+            updates.update({"assigned_pds_officer_id": None})
+            address["pds_center_id"] = ""
+            address["pds_center_name"] = ""
+            updates["address_data"] = address
+        await update_user(db, user_id, updates)
+    elif request_type == "FAMILY_ADDITION":
+        for member in requested.get("family_members", []):
+            identity = "".join(ch for ch in str(member.get("aadhaar_number", "")) if ch.isdigit())
+            db.add(FamilyMemberRecord(
+                id=f"fm-{uuid4().hex}", beneficiary_id=user_id,
+                full_name=str(member.get("full_name", "")).strip(),
+                relationship=str(member.get("relationship", "OTHER")).strip().upper(),
+                date_of_birth=member.get("date_of_birth"),
+                gender=member.get("gender"),
+                identity_last_four=identity[-4:] if len(identity) >= 4 else None,
+                status="VERIFIED",
+            ))
+    elif request_type == "FAMILY_REMOVAL":
+        member_id = str(requested.get("member_id") or "")
+        result = await db.execute(select(FamilyMemberRecord).where(
+            FamilyMemberRecord.id == member_id,
+            FamilyMemberRecord.beneficiary_id == user_id,
+        ))
+        if result.scalars().first() is None:
+            raise HTTPException(status_code=409, detail="The family member record no longer exists.")
+        await db.execute(delete(FamilyMemberRecord).where(
+            FamilyMemberRecord.id == member_id,
+            FamilyMemberRecord.beneficiary_id == user_id,
+        ))
 
 
 @router.get("/mine")
@@ -652,6 +738,9 @@ async def review_change_request(
             detail="This change request is no longer awaiting review.",
         )
 
+    if payload.status == "APPROVED":
+        await _apply_approved_request(db, request_record)
+
     reviewer_id = str(current_user.get("_id") or current_user.get("id") or "")
     reviewed_at = datetime.now(timezone.utc).isoformat()
     try:
@@ -683,6 +772,20 @@ async def review_change_request(
                     "MongoDB request review failed; trying SQL fallback: %s", exc
                 )
         if mongo_record:
+            await add_notification(
+                db, str(request_record.get("beneficiary_id")),
+                f"Change request {payload.status.lower().replace('_', ' ')}",
+                f"Request {request_id} was {payload.status.lower()}. {payload.review_notes.strip()}",
+                "SUCCESS" if payload.status == "APPROVED" else "WARNING",
+                "CHANGE_REQUEST", request_id,
+            )
+            if payload.status == "ESCALATED":
+                await add_risk_alert(
+                    db, severity="HIGH", title="Change request escalated for review",
+                    description=payload.review_notes.strip(), source_type="CHANGE_REQUEST",
+                    source_id=request_id, beneficiary_id=str(request_record.get("beneficiary_id")),
+                )
+            await db.commit()
             log_action(
                 reviewer_id,
                 canonicalize_role(current_user.get("role", "")) or "PDS_OFFICER",
@@ -709,6 +812,19 @@ async def review_change_request(
         record.review_notes = payload.review_notes
         record.reviewed_by = reviewer_id
         record.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        await add_notification(
+            db, record.beneficiary_id,
+            f"Change request {payload.status.lower().replace('_', ' ')}",
+            f"Request {request_id} was {payload.status.lower()}. {payload.review_notes.strip()}",
+            "SUCCESS" if payload.status == "APPROVED" else "WARNING",
+            "CHANGE_REQUEST", request_id,
+        )
+        if payload.status == "ESCALATED":
+            await add_risk_alert(
+                db, severity="HIGH", title="Change request escalated for review",
+                description=payload.review_notes.strip(), source_type="CHANGE_REQUEST",
+                source_id=request_id, beneficiary_id=record.beneficiary_id,
+            )
         await db.commit()
         await db.refresh(record)
         log_action(

@@ -1,178 +1,34 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Beneficiary } from "@/types";
 import { useAuthStore } from "@/stores/auth.store";
 import { useBeneficiaryStore } from "@/stores/beneficiary.store";
-import { FileCheck, ShieldCheck, Loader2 } from "lucide-react";
+import { FileCheck, Loader2 } from "lucide-react";
 
 export default function BeneficiaryEligibilityPage() {
   const { user } = useAuthStore();
-  const {
-    profile: beneficiary,
-    isLoading: loading,
-    ensureLoaded,
-  } = useBeneficiaryStore();
+  const { profile, isLoading, error, ensureLoaded } = useBeneficiaryStore();
+  useEffect(() => { void ensureLoaded(user); }, [user?.id, ensureLoaded]);
 
-  useEffect(() => {
-    ensureLoaded(user);
-  }, [user?.id]);
+  if (isLoading && !profile) return <div className="flex min-h-[300px] flex-col items-center justify-center gap-3"><Loader2 className="size-8 animate-spin text-primary" /><p className="text-sm text-muted-foreground">Loading saved eligibility data…</p></div>;
+  if (!profile) return <section className="mx-auto max-w-2xl border border-border bg-white p-10 text-center"><h1 className="ben-title text-foreground">Eligibility data unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{error || "Eligibility information could not be loaded."}</p></section>;
 
-  if (loading && !beneficiary) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] space-y-3">
-        <Loader2 className="size-8 text-primary animate-spin" />
-        <p className="text-xs text-muted-foreground font-mono">
-          Loading welfare quota eligibility...
-        </p>
-      </div>
-    );
-  }
+  const eligibility = profile.eligibility;
+  const date = (value: string | null) => value ? new Date(value).toLocaleDateString() : "Not recorded";
 
-  const eligibility = beneficiary?.eligibility || {
-    beneficiaryId: user?.id || "BEN-USER",
-    category: "PHH" as const,
-    monthlyEntitlements: [
-      {
-        commodity: "Rice (Fortified)",
-        quantity: 20,
-        unit: "KG",
-        subsidizedPricePerUnit: 3.0,
-      },
-      {
-        commodity: "Wheat (Whole Grain)",
-        quantity: 15,
-        unit: "KG",
-        subsidizedPricePerUnit: 2.0,
-      },
-      {
-        commodity: "Refined Sugar",
-        quantity: 2,
-        unit: "KG",
-        subsidizedPricePerUnit: 13.5,
-      },
-      {
-        commodity: "Kerosene (Illumination)",
-        quantity: 3,
-        unit: "L",
-        subsidizedPricePerUnit: 18.0,
-      },
-    ],
-    monthlyIncome: 10000,
-    isBPL: true,
-    lastReviewedAt: "2026-08-01T00:00:00Z",
-    nextReviewDue: "2027-08-01T00:00:00Z",
-    status: "ELIGIBLE" as const,
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-        <div>
-          <h1 className="ben-title text-foreground">
-            Ration Eligibility & Entitlements
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Official monthly commodity quotas and subsidy price schedules
-          </p>
-        </div>
-
-        <span className="px-3 py-1 bg-secondary text-foreground font-mono text-xs font-bold rounded-full border border-border self-start sm:self-auto">
-          STATUS: {eligibility.status}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
-          <h2 className="ben-section-title text-foreground border-b border-border pb-3 flex items-center gap-2">
-            <FileCheck className="size-4 text-primary" /> Monthly Subsidized
-            Commodities
-          </h2>
-
-          <div className="space-y-3">
-            {eligibility.monthlyEntitlements.map((item) => (
-              <div
-                key={item.commodity}
-                className="bg-muted/40 p-4 rounded-md border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0"
-              >
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-bold text-sm text-foreground">
-                    {item.commodity}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    State Subsidized Rate:{" "}
-                    <span className="font-mono text-primary font-bold">
-                      ₹{item.subsidizedPricePerUnit}
-                    </span>{" "}
-                    per {item.unit}
-                  </p>
-                </div>
-                <div className="text-left sm:text-right shrink-0">
-                  <span className="text-xl font-extrabold text-foreground font-mono">
-                    {item.quantity} {item.unit}
-                  </span>
-                  <p className="text-[10px] text-muted-foreground uppercase font-mono block">
-                    Monthly Limit
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-md p-5 space-y-4 shadow-subtle">
-          <h2 className="font-bold text-sm text-foreground border-b border-border pb-3">
-            Eligibility Audit Details
-          </h2>
-
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between py-1.5 border-b border-border/60">
-              <span className="text-muted-foreground">
-                Ration Scheme Category
-              </span>
-              <span className="font-bold text-foreground">
-                {eligibility.category}
-              </span>
-            </div>
-
-            <div className="flex justify-between py-1.5 border-b border-border/60">
-              <span className="text-muted-foreground">
-                Certified Household Income
-              </span>
-              <span className="font-mono text-foreground">
-                ₹{eligibility.monthlyIncome.toLocaleString()} / mo
-              </span>
-            </div>
-
-            <div className="flex justify-between py-1.5 border-b border-border/60">
-              <span className="text-muted-foreground">
-                Below Poverty Line (BPL)
-              </span>
-              <span className="font-bold text-primary">
-                {eligibility.isBPL ? "YES (Verified)" : "NO"}
-              </span>
-            </div>
-
-            <div className="flex justify-between py-1.5 border-b border-border/60">
-              <span className="text-muted-foreground">
-                Last Eligibility Review
-              </span>
-              <span className="font-mono text-muted-foreground">
-                {new Date(eligibility.lastReviewedAt).toLocaleDateString()}
-              </span>
-            </div>
-
-            <div className="flex justify-between py-1.5 border-b border-border/60">
-              <span className="text-muted-foreground">
-                Next Review Scheduled
-              </span>
-              <span className="font-mono text-foreground">
-                {new Date(eligibility.nextReviewDue).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+  return <div className="space-y-6">
+    <header className="flex flex-col justify-between gap-4 border-b border-border pb-4 sm:flex-row sm:items-center"><div><h1 className="ben-title text-foreground">Ration Eligibility & Entitlements</h1><p className="text-xs text-muted-foreground">Recorded category rules and household assessment information</p></div><span className="self-start rounded-full border border-border bg-secondary px-3 py-1 font-mono text-xs font-bold text-foreground sm:self-auto">STATUS: {eligibility.status}</span></header>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <section className="space-y-4 rounded-md border border-border bg-card p-5 shadow-subtle lg:col-span-2"><h2 className="ben-section-title flex items-center gap-2 border-b border-border pb-3 text-foreground"><FileCheck className="size-4 text-primary" />Monthly Subsidized Commodities</h2>
+        {eligibility.monthlyEntitlements.length === 0 ? <p className="rounded-md border border-border bg-muted/30 p-5 text-sm text-muted-foreground">No entitlement rules are configured for this ration category yet.</p> : <div className="space-y-3">{eligibility.monthlyEntitlements.map((item) => <div key={item.commodity} className="flex flex-col justify-between gap-3 rounded-md border border-border bg-muted/40 p-4 sm:flex-row sm:items-center"><div><h3 className="text-sm font-bold text-foreground">{item.commodity}</h3><p className="mt-1 text-xs text-muted-foreground">Recorded subsidized rate: <span className="font-mono font-bold text-primary">₹{item.subsidizedPricePerUnit}</span> per {item.unit}</p></div><div className="shrink-0 text-left sm:text-right"><span className="font-mono text-xl font-extrabold text-foreground">{item.quantity} {item.unit}</span><p className="block font-mono text-[10px] uppercase text-muted-foreground">Monthly limit</p></div></div>)}</div>}
+      </section>
+      <section className="space-y-4 rounded-md border border-border bg-card p-5 shadow-subtle"><h2 className="border-b border-border pb-3 text-sm font-bold text-foreground">Eligibility Audit Details</h2><dl className="space-y-3 text-xs">
+        <div className="flex justify-between gap-3 border-b border-border/60 py-1.5"><dt className="text-muted-foreground">Ration Scheme Category</dt><dd className="font-bold text-foreground">{eligibility.category || "Not configured"}</dd></div>
+        <div className="flex justify-between gap-3 border-b border-border/60 py-1.5"><dt className="text-muted-foreground">Household Income</dt><dd className="font-mono text-foreground">{eligibility.monthlyIncome == null ? "Not recorded" : `₹${eligibility.monthlyIncome.toLocaleString()} / mo`}</dd></div>
+        <div className="flex justify-between gap-3 border-b border-border/60 py-1.5"><dt className="text-muted-foreground">BPL Assessment</dt><dd className="font-bold text-primary">{eligibility.isBPL == null ? "Not assessed" : eligibility.isBPL ? "Yes" : "No"}</dd></div>
+        <div className="flex justify-between gap-3 border-b border-border/60 py-1.5"><dt className="text-muted-foreground">Last Review</dt><dd className="font-mono text-muted-foreground">{date(eligibility.lastReviewedAt)}</dd></div>
+        <div className="flex justify-between gap-3 py-1.5"><dt className="text-muted-foreground">Next Review</dt><dd className="font-mono text-foreground">{eligibility.nextReviewDue ? date(eligibility.nextReviewDue) : "Not scheduled"}</dd></div>
+      </dl></section>
     </div>
-  );
+  </div>;
 }

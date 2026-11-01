@@ -1,139 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
-import { MOCK_AI_RISK_ASSESSMENTS } from "@/mock-data/pds-data";
-import { RiskIndicator } from "@/components/dashboard/RiskIndicator";
-import { Cpu, ShieldCheck } from "lucide-react";
-import { AIRiskAssessment } from "@/types";
+import React, { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/services/api/client";
+import { AlertCircle, Cpu, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+
+type RiskAlert = { id: string; severity: string; title: string; description: string; beneficiaryId: string | null; sourceType: string; sourceId: string | null; status: string; createdAt: string | null };
 
 export default function AIIntelligencePage() {
-  const [assessments] = useState<AIRiskAssessment[]>(MOCK_AI_RISK_ASSESSMENTS);
-  const [selectedEntity, setSelectedEntity] = useState<AIRiskAssessment | null>(
-    MOCK_AI_RISK_ASSESSMENTS.length > 0 ? MOCK_AI_RISK_ASSESSMENTS[0] : null,
-  );
-
-  return (
-    <div className="space-y-6">
-      <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-cyan-400" />
-          AI Anomaly & Risk Intelligence Dashboard
-        </h1>
-        <p className="text-xs text-slate-400">
-          Machine learning behavioral risk analysis and explainable anomaly
-          detection engine
-        </p>
-      </div>
-
-      {assessments.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-12 text-center max-w-lg mx-auto space-y-4">
-          <div className="p-3 bg-slate-800 rounded-full w-12 h-12 flex items-center justify-center mx-auto border border-slate-700">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
-          </div>
-          <div>
-            <h2 className="empty-state-title text-slate-200">
-              No Anomalies Detected
-            </h2>
-            <p className="empty-state-description text-slate-400 mt-1">
-              No high-risk entities or suspicious behavioral patterns are
-              currently flagged by the AI engine. All incoming transactions and
-              access events are monitored continuously.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Analyzed Entities ({assessments.length})
-            </h2>
-            {assessments.map((item) => (
-              <button
-                key={item.entityId}
-                onClick={() => setSelectedEntity(item)}
-                className={`w-full text-left p-4 rounded-xl border transition-all ${
-                  selectedEntity?.entityId === item.entityId
-                    ? "bg-slate-900 border-cyan-500 shadow-md ring-1 ring-cyan-500/50"
-                    : "bg-slate-950 border-slate-800 hover:bg-slate-900"
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-mono font-bold text-cyan-400">
-                    {item.entityId}
-                  </span>
-                  <RiskIndicator
-                    score={item.riskScore}
-                    level={item.riskLevel}
-                    showDetails={false}
-                  />
-                </div>
-                <p className="text-xs font-bold text-slate-200">
-                  {item.entityName}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Type: {item.entityType}
-                </p>
-              </button>
-            ))}
-          </div>
-
-          {selectedEntity && (
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
-                <div>
-                  <span className="font-mono text-xs font-bold text-cyan-400">
-                    {selectedEntity.entityId}
-                  </span>
-                  <h2 className="text-base font-bold text-slate-100 mt-0.5">
-                    {selectedEntity.entityName}
-                  </h2>
-                </div>
-                <RiskIndicator
-                  score={selectedEntity.riskScore}
-                  level={selectedEntity.riskLevel}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">
-                  Explainable Anomaly Factors
-                </h3>
-                <div className="space-y-2">
-                  {selectedEntity.explainableFactors.map((f, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-start justify-between gap-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-xs text-slate-200">
-                          {f.factor}
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          {f.description}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 self-start px-2.5 py-0.5 rounded text-[10px] font-bold ${f.impact === "HIGH" ? "bg-rose-950 text-rose-300" : "bg-amber-950 text-amber-300"}`}
-                      >
-                        {f.impact} IMPACT
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-800">
-                <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg">
-                  Mark False Positive
-                </button>
-                <button className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-sm">
-                  Restrict Access & Trigger SOC Probe
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const [alerts, setAlerts] = useState<RiskAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const response = await apiClient.get("/admin/alerts"); setAlerts(Array.isArray(response.data?.alerts) ? response.data.alerts : []); }
+    catch (cause) { setAlerts([]); setError(cause instanceof Error ? cause.message : "Risk alerts could not be loaded."); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  const openCount = alerts.filter((alert) => alert.status === "OPEN").length;
+  return <div className="space-y-6">
+    <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4"><div><h1 className="flex items-center gap-2 text-xl font-bold text-foreground"><Cpu className="size-5 text-primary" />Risk & Security Alerts</h1><p className="mt-1 text-xs text-muted-foreground">Persisted alert records. No automated model assessment is claimed by this page.</p></div><button type="button" onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 border border-border px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-50"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />Refresh</button></header>
+    {error && <div role="alert" className="flex items-center gap-2 border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="size-4" />{error}</div>}
+    <div className="grid gap-4 sm:grid-cols-2"><div className="border border-border bg-card p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Persisted alerts</p><p className="mt-1 font-mono text-2xl font-bold text-foreground">{alerts.length}</p></div><div className="border border-border bg-card p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Open alerts</p><p className="mt-1 font-mono text-2xl font-bold text-primary">{openCount}</p></div></div>
+    {loading ? <div className="border border-border bg-card p-10 text-center text-muted-foreground"><Loader2 className="mx-auto mb-3 size-6 animate-spin" />Loading stored alert records…</div> : alerts.length === 0 ? <section className="border border-border bg-card p-12 text-center"><ShieldAlert className="mx-auto mb-3 size-7 text-primary" /><h2 className="font-semibold text-foreground">No alert records found</h2><p className="mt-1 text-sm text-muted-foreground">No risk alert records have been persisted in the database.</p></section> : <div className="space-y-3">{alerts.map((alert) => <article key={alert.id} className="space-y-2 border border-border bg-card p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono text-xs text-muted-foreground">{alert.id}</p><h2 className="mt-1 font-semibold text-foreground">{alert.title}</h2></div><span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">{alert.severity} · {alert.status}</span></div><p className="text-sm text-muted-foreground">{alert.description}</p><p className="text-xs text-muted-foreground">{alert.beneficiaryId ? `Beneficiary ${alert.beneficiaryId}` : "System"} · {alert.sourceType}{alert.sourceId ? ` ${alert.sourceId}` : ""}{alert.createdAt ? ` · ${new Date(alert.createdAt).toLocaleString()}` : ""}</p></article>)}</div>}
+  </div>;
 }

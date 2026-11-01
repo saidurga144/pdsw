@@ -42,6 +42,11 @@ class UserOut(BaseModel):
     phone: Optional[str] = None
     jurisdiction: Optional[str] = None
     assigned_pds_officer_id: Optional[str] = None
+    ration_card_number: Optional[str] = None
+    card_category: Optional[str] = None
+    address_data: Optional[dict[str, Any]] = None
+    monthly_income: Optional[int] = None
+    verification_status: Optional[str] = None
     wallet_address: Optional[str] = None
     status: str
 
@@ -78,6 +83,8 @@ class OfficerCreateBeneficiary(BaseModel):
     wallet_address: Optional[str] = None
     ration_card_number: Optional[str] = None
     card_category: Optional[str] = None
+    address_data: Optional[dict[str, Any]] = None
+    monthly_income: Optional[int] = Field(default=None, ge=0, le=10_000_000)
 
     @field_validator("wallet_address", mode="before")
     @classmethod
@@ -97,6 +104,9 @@ class UpdateBeneficiary(BaseModel):
     phone: Optional[str] = None
     jurisdiction: Optional[str] = None
     card_category: Optional[str] = None
+    ration_card_number: Optional[str] = None
+    address_data: Optional[dict[str, Any]] = None
+    monthly_income: Optional[int] = Field(default=None, ge=0, le=10_000_000)
 
     @field_validator("phone", mode="before")
     @classmethod

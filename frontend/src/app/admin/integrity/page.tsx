@@ -1,135 +1,27 @@
 "use client";
 
-import React from "react";
-import {
-  MOCK_INTEGRITY_VERIFICATIONS,
-  MOCK_VERSION_HISTORY,
-} from "@/mock-data/pds-data";
-import { HashComparison } from "@/components/integrity/HashComparison";
-import { VersionTimeline } from "@/components/integrity/VersionTimeline";
-import { IntegrityBadge } from "@/components/integrity/IntegrityBadge";
-import { ShieldCheck, RefreshCw, FileText } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/services/api/client";
+import { AlertCircle, FileText, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+
+type Evidence = { id: string; userId: string; documentId: string; cid?: string | null; fileHash?: string | null; transactionHash?: string | null; role: string; status: string; createdAt?: string | null };
 
 export default function AdminIntegrityPage() {
-  const verifications = MOCK_INTEGRITY_VERIFICATIONS;
-  const mismatchCount = verifications.filter(
-    (v) => v.status === "MISMATCH_DETECTED",
-  ).length;
-  const verifiedCount = verifications.filter(
-    (v) => v.status === "VERIFIED",
-  ).length;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-cyan-400" />
-            Cryptographic Integrity & Hash Verification
-          </h1>
-          <p className="text-xs text-slate-400">
-            Automated SHA-256 database state validation against IPFS immutable
-            proof anchors
-          </p>
-        </div>
-
-        <button className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 shadow">
-          <RefreshCw className="w-4 h-4" /> Run Full Audit Sweep
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-slate-400 uppercase">
-            Verified Records
-          </p>
-          <p className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
-            {verifiedCount}
-          </p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            Cryptographically Valid
-          </p>
-        </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-slate-400 uppercase">
-            Integrity Mismatches
-          </p>
-          <p className="text-2xl font-extrabold text-rose-500 mt-1 font-mono">
-            {mismatchCount}
-          </p>
-          <p className="text-[11px] text-rose-400 mt-1">
-            Immediate SOC Alert Triggered
-          </p>
-        </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-          <p className="text-xs font-semibold text-slate-400 uppercase">
-            IPFS Provenance Ledger
-          </p>
-          <p className="text-2xl font-extrabold text-cyan-400 mt-1 font-mono">
-            {verifications.length} CIDs
-          </p>
-          <p className="text-[11px] text-slate-500 mt-1">
-            Content-Addressed DAG
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="font-bold text-sm text-slate-200 border-b border-slate-800 pb-2">
-          Active Hash Verification Sweeps
-        </h2>
-        {verifications.length === 0 ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 text-center text-slate-400 space-y-2">
-            <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto" />
-            <p className="text-xs font-semibold text-slate-300">
-              No Verification Sweeps Recorded
-            </p>
-            <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
-              No database records currently require integrity reconciliation in
-              clean slate.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {verifications.map((v) => (
-              <div key={v.recordId} className="space-y-2">
-                <div className="flex items-center justify-between text-xs px-1">
-                  <span className="font-mono font-bold text-slate-300">
-                    Record: {v.recordId}
-                  </span>
-                  <IntegrityBadge status={v.status} size="sm" />
-                </div>
-                <HashComparison
-                  expectedHash={v.expectedHash}
-                  currentDatabaseHash={v.currentDatabaseHash}
-                  ipfsCid={v.ipfsEvidenceCid}
-                  status={v.status}
-                  lastVerifiedAt={v.lastVerifiedAt}
-                />
-                {v.tamperAlertDetails && (
-                  <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-lg text-rose-300 text-xs font-mono">
-                    ⚠ ALERT: {v.tamperAlertDetails}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
-        <h2 className="font-bold text-sm text-slate-200 border-b border-slate-800 pb-3">
-          Beneficiary Record Version History
-        </h2>
-        {MOCK_VERSION_HISTORY.length === 0 ? (
-          <div className="py-8 text-center text-slate-500 space-y-2">
-            <FileText className="w-6 h-6 mx-auto opacity-40" />
-            <p className="text-xs">No version history records found.</p>
-          </div>
-        ) : (
-          <VersionTimeline versions={MOCK_VERSION_HISTORY} />
-        )}
-      </div>
-    </div>
-  );
+  const [records, setRecords] = useState<Evidence[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try { const response = await apiClient.get("/admin/integrity"); setRecords(Array.isArray(response.data?.records) ? response.data.records : []); }
+    catch (cause) { setRecords([]); setError(cause instanceof Error ? cause.message : "Integrity evidence could not be loaded."); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  const anchored = records.filter((record) => record.cid && record.fileHash).length;
+  return <div className="space-y-6">
+    <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4"><div><h1 className="flex items-center gap-2 text-xl font-bold text-foreground"><ShieldCheck className="size-5 text-primary" />Document Integrity Evidence</h1><p className="mt-1 text-xs text-muted-foreground">Persisted document audit entries; no tamper-free status is inferred without a trusted baseline.</p></div><button type="button" onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 border border-border px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-50"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />Refresh</button></header>
+    {error && <div role="alert" className="flex items-center gap-2 border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="size-4" />{error}</div>}
+    <div className="grid gap-4 sm:grid-cols-2"><div className="border border-border bg-card p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Document audit records</p><p className="mt-1 font-mono text-2xl font-bold text-foreground">{records.length}</p></div><div className="border border-border bg-card p-5"><p className="text-xs font-semibold uppercase text-muted-foreground">Records with CID and digest</p><p className="mt-1 font-mono text-2xl font-bold text-primary">{anchored}</p></div></div>
+    {loading ? <div className="border border-border bg-card p-10 text-center text-muted-foreground"><Loader2 className="mx-auto mb-3 size-6 animate-spin" />Loading evidence records…</div> : records.length === 0 ? <section className="border border-border bg-card p-10 text-center"><FileText className="mx-auto mb-3 size-7 text-primary" /><h2 className="font-semibold text-foreground">No document audit records</h2><p className="mt-1 text-sm text-muted-foreground">No supporting document records are currently persisted.</p></section> : <div className="overflow-x-auto border border-border bg-card"><table className="w-full min-w-[800px] text-left text-xs"><thead className="bg-muted/50 text-muted-foreground"><tr>{["DOCUMENT", "USER", "ROLE", "STATUS", "IPFS CID", "SHA-256", "TRANSACTION", "RECORDED"].map((label) => <th key={label} className="px-3 py-3 font-semibold">{label}</th>)}</tr></thead><tbody>{records.map((record) => <tr key={record.id} className="border-t border-border"><td className="px-3 py-3 font-mono">{record.documentId}</td><td className="px-3 py-3 font-mono">{record.userId}</td><td className="px-3 py-3">{record.role}</td><td className="px-3 py-3">{record.status}</td><td className="max-w-[180px] break-all px-3 py-3 font-mono">{record.cid || "Not recorded"}</td><td className="max-w-[180px] break-all px-3 py-3 font-mono">{record.fileHash || "Not recorded"}</td><td className="max-w-[150px] break-all px-3 py-3 font-mono">{record.transactionHash || "Not recorded"}</td><td className="px-3 py-3">{record.createdAt ? new Date(record.createdAt).toLocaleString() : "Not recorded"}</td></tr>)}</tbody></table></div>}
+  </div>;
 }

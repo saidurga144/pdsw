@@ -87,6 +87,11 @@ def _doc_to_user_out(doc: dict) -> UserOut:
         phone=doc.get("phone"),
         jurisdiction=doc.get("jurisdiction"),
         assigned_pds_officer_id=doc.get("assigned_pds_officer_id"),
+        ration_card_number=doc.get("ration_card_number"),
+        card_category=doc.get("card_category"),
+        address_data=doc.get("address_data"),
+        monthly_income=doc.get("monthly_income"),
+        verification_status=doc.get("verification_status"),
         wallet_address=doc.get("wallet_address"),
         status=doc.get("status", "ACTIVE"),
     )
@@ -435,6 +440,11 @@ async def officer_create_beneficiary(
         "phone": payload.phone,
         "jurisdiction": payload.jurisdiction
         or current_officer.get("jurisdiction", "National Jurisdiction"),
+        "ration_card_number": payload.ration_card_number,
+        "card_category": payload.card_category,
+        "address_data": payload.address_data,
+        "monthly_income": payload.monthly_income,
+        "verification_status": "PENDING",
         "assigned_pds_officer_id": (
             str(current_officer.get("_id") or current_officer.get("id") or "")
             if canonicalize_role(current_officer.get("role", "")) == "PDS_OFFICER"
@@ -1181,6 +1191,11 @@ async def officer_list_beneficiaries(
                 "phone": user.phone,
                 "jurisdiction": user.jurisdiction,
                 "assigned_pds_officer_id": user.assigned_pds_officer_id,
+                "ration_card_number": user.ration_card_number,
+                "card_category": user.card_category,
+                "address_data": user.address_data,
+                "monthly_income": user.monthly_income,
+                "verification_status": user.verification_status,
                 "wallet_address": user.wallet_address,
                 "status": user.status,
                 "created_at": (
@@ -1231,6 +1246,12 @@ async def officer_update_beneficiary(
         updates["jurisdiction"] = payload.jurisdiction.strip()
     if payload.card_category is not None and payload.card_category.strip():
         updates["card_category"] = payload.card_category.strip()
+    if payload.ration_card_number is not None:
+        updates["ration_card_number"] = payload.ration_card_number.strip() or None
+    if payload.address_data is not None:
+        updates["address_data"] = payload.address_data
+    if payload.monthly_income is not None:
+        updates["monthly_income"] = payload.monthly_income
 
     if not updates:
         raise HTTPException(

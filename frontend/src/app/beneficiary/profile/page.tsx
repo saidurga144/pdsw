@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Beneficiary } from "@/types";
 import { useAuthStore } from "@/stores/auth.store";
 import { useBeneficiaryStore } from "@/stores/beneficiary.store";
 import {
@@ -21,6 +20,7 @@ export default function BeneficiaryProfilePage() {
   const {
     profile: beneficiary,
     isLoading: loading,
+    error,
     ensureLoaded,
   } = useBeneficiaryStore();
 
@@ -39,41 +39,8 @@ export default function BeneficiaryProfilePage() {
     );
   }
 
-  const profile = beneficiary || {
-    id: user?.id || "BEN-USER",
-    rationCardId: `RC-${user?.id?.slice(-6).toUpperCase() || "DEL-101"}`,
-    fullName: user?.name || "Authenticated Citizen",
-    phone: user?.phone || "+91 98000 00000",
-    address: {
-      doorNo: "H-42",
-      street: "Block B, Main Road",
-      district: user?.jurisdiction?.split(",")[0]?.trim() || "South Delhi",
-      state: user?.jurisdiction?.split(",")[1]?.trim() || "Delhi",
-      pincode: "110016",
-      pdsCenterId: "FPS-DEL-102",
-      pdsCenterName: `Fair Price Shop #102, ${user?.jurisdiction || "South Delhi"}`,
-    },
-    rationCategory: "PHH" as const,
-    familyCount: 1,
-    familyMembers: [],
-    verificationStatus: "VERIFIED" as const,
-    riskScore: 5,
-    riskLevel: "LOW" as const,
-    currentHash: "0x000",
-    latestIPFSCid: "Qm000",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    eligibility: {
-      beneficiaryId: user?.id || "BEN-USER",
-      category: "PHH" as const,
-      monthlyEntitlements: [],
-      monthlyIncome: 10000,
-      isBPL: true,
-      lastReviewedAt: new Date().toISOString(),
-      nextReviewDue: new Date().toISOString(),
-      status: "ELIGIBLE" as const,
-    },
-  };
+  if (!beneficiary) return <section className="mx-auto max-w-2xl border border-border bg-white p-10 text-center"><h1 className="ben-title text-foreground">Profile unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{error || "Your saved profile could not be loaded."}</p></section>;
+  const profile = beneficiary;
 
   return (
     <div className="space-y-6">
@@ -117,7 +84,7 @@ export default function BeneficiaryProfilePage() {
                 <Lock className="size-3 text-primary" /> Ration Card Number
               </span>
               <span className="font-mono font-bold text-primary text-right truncate">
-                {profile.rationCardId}
+                {profile.rationCardId || "Not recorded"}
               </span>
             </div>
 
@@ -126,7 +93,7 @@ export default function BeneficiaryProfilePage() {
                 <Lock className="size-3 text-primary" /> Ration Scheme Category
               </span>
               <span className="font-bold text-foreground text-right">
-                {profile.rationCategory} (Priority Household)
+                {profile.rationCategory || "Not configured"}
               </span>
             </div>
 
@@ -136,7 +103,7 @@ export default function BeneficiaryProfilePage() {
                 Phone
               </span>
               <span className="font-mono text-foreground text-right">
-                {profile.phone}
+                {profile.phone || "Not recorded"}
               </span>
             </div>
 
@@ -155,7 +122,7 @@ export default function BeneficiaryProfilePage() {
                 Registered Family Size
               </span>
               <span className="font-bold text-foreground text-right">
-                {profile.familyCount || 1} Members
+                {profile.familyCount} Members
               </span>
             </div>
           </div>
@@ -173,7 +140,7 @@ export default function BeneficiaryProfilePage() {
                 Door & Street Address
               </span>
               <span className="font-semibold text-foreground text-right">
-                {profile.address.doorNo}, {profile.address.street}
+                {[profile.address.doorNo, profile.address.street].filter(Boolean).join(", ") || "Not recorded"}
               </span>
             </div>
 
@@ -182,14 +149,14 @@ export default function BeneficiaryProfilePage() {
                 District & State
               </span>
               <span className="text-foreground text-right">
-                {profile.address.district}, {profile.address.state}
+                {[profile.address.district, profile.address.state].filter(Boolean).join(", ") || "Not recorded"}
               </span>
             </div>
 
             <div className="flex items-center justify-between gap-3 min-w-0 py-1 border-b border-border/60">
               <span className="shrink-0 text-muted-foreground">Pincode</span>
               <span className="font-mono text-foreground text-right">
-                {profile.address.pincode}
+                {profile.address.pincode || "Not recorded"}
               </span>
             </div>
 
@@ -199,7 +166,7 @@ export default function BeneficiaryProfilePage() {
                 Shop
               </span>
               <span className="font-semibold text-primary text-right">
-                {profile.address.pdsCenterName}
+                {[profile.address.pdsCenterName, profile.address.pdsCenterId].filter(Boolean).join(" · ") || "Not assigned"}
               </span>
             </div>
           </div>

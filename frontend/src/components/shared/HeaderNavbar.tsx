@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth.store";
 import { useNotificationStore } from "@/stores/notification.store";
@@ -10,7 +10,7 @@ import { Bell, Menu, Search } from "lucide-react";
 
 export const HeaderNavbar: React.FC = () => {
   const { role } = useAuthStore();
-  const { unreadCount } = useNotificationStore();
+  const { unreadCount, loadNotifications } = useNotificationStore();
   const { setMobileMenuOpen, mobileMenuOpen, setSearchOpen } = useUIStore();
 
   const notificationHrefByRole: Record<string, string> = {
@@ -21,6 +21,10 @@ export const HeaderNavbar: React.FC = () => {
   };
   const notificationHref =
     notificationHrefByRole[normalizeRole(role || "")] || "/";
+
+  useEffect(() => {
+    if (normalizeRole(role || "") === "BENEFICIARY") void loadNotifications();
+  }, [role, loadNotifications]);
 
   return (
     <header className="glass-dashboard-header sticky top-0 z-30 shrink-0 border-b border-border bg-[var(--glass-header-surface)] text-foreground backdrop-blur-xl">

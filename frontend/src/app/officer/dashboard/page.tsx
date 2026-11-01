@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   Building2,
   PackageOpen,
-  CheckCircle,
   ArrowRight,
 } from "lucide-react";
 import { apiClient } from "@/services/api/client";
@@ -18,8 +17,9 @@ import Link from "next/link";
 
 export default function OfficerDashboard() {
   const { user } = useAuthStore();
-  const [requests, setRequests] = useState<any[]>([]);
-  const [beneficiaryCount, setBeneficiaryCount] = useState<number>(0);
+  const [stats, setStats] = useState<Record<string, number> | null>(null);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [recentDistributions, setRecentDistributions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -30,36 +30,18 @@ export default function OfficerDashboard() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [reqRes, benRes] = await Promise.allSettled([
-          apiClient.get("/officer/requests"),
-          apiClient.get("/officer/beneficiaries"),
-        ]);
-
-        if (
-          reqRes.status === "fulfilled" &&
-          reqRes.value.data?.success &&
-          Array.isArray(reqRes.value.data.requests)
-        ) {
-          setRequests(reqRes.value.data.requests);
-        } else {
-          setRequests([]);
-          setDataError("Modification requests could not be loaded.");
+        const response = await apiClient.get("/officer/summary");
+        if (!response.data?.success || !response.data?.stats) {
+          throw new Error(response.data?.detail || response.data?.error || "Officer dashboard data is unavailable.");
         }
-
-        if (
-          benRes.status === "fulfilled" &&
-          benRes.value.data?.success &&
-          Array.isArray(benRes.value.data.beneficiaries)
-        ) {
-          setBeneficiaryCount(benRes.value.data.beneficiaries.length);
-        } else {
-          setBeneficiaryCount(0);
-          setDataError((current) => current || "Beneficiary records could not be loaded.");
-        }
-      } catch {
-        setRequests([]);
-        setBeneficiaryCount(0);
-        setDataError("Officer dashboard data is unavailable.");
+        setStats(response.data.stats);
+        setRecentRequests(Array.isArray(response.data.recentRequests) ? response.data.recentRequests : []);
+        setRecentDistributions(Array.isArray(response.data.recentDistributions) ? response.data.recentDistributions : []);
+      } catch (cause) {
+        setStats(null);
+        setRecentRequests([]);
+        setRecentDistributions([]);
+        setDataError(cause instanceof Error ? cause.message : "Officer dashboard data is unavailable.");
       } finally {
         setLoading(false);
       }
@@ -68,8 +50,9 @@ export default function OfficerDashboard() {
     loadDashboardData();
   }, []);
 
-  const pendingRequests = requests.filter(
-    (r) => r.status === "SUBMITTED" || r.status === "PENDING",
+  const stat = (key: string) => loading ? "…" : dataError ? "—" : Number(stats?.[key] ?? 0).toLocaleString();
+  const pendingRequests = recentRequests.filter((request) =>
+    ["SUBMITTED", "PENDING", "UNDER_REVIEW", "OFFICER_VERIFICATION"].includes(String(request.status).toUpperCase()),
   );
 
   return (
@@ -98,35 +81,37 @@ export default function OfficerDashboard() {
 
       {dataError && <div role="alert" className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{dataError}</div>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
         <StatsCard
-          title="Beneficiaries returned"
-          value={loading ? "…" : dataError ? "—" : beneficiaryCount.toLocaleString()}
-          description={jurisdiction || "Current officer query result"}
+          title="Assigned beneficiaries"
+          value={stat("assignedBeneficiaries")}
+          description={jurisdiction || "Accounts assigned to your officer ID"}
           icon={Users}
           iconBgColor="bg-secondary text-primary border border-border"
         />
         <StatsCard
-          title="Pending Modifications"
-          value={loading ? "…" : dataError ? "—" : pendingRequests.length.toString()}
-          description="Submitted or pending requests returned"
+          title="Pending verifications"
+          value={stat("pendingVerifications")}
+          description="Assigned accounts awaiting verification"
           icon={Send}
           iconBgColor="bg-secondary text-primary border border-border"
         />
         <StatsCard
-          title="Flagged Risk Alerts"
-          value="—"
-          description="No officer-visible risk feed configured"
-          icon={AlertTriangle}
+          title="Pending modifications"
+          value={stat("pendingRequests")}
+          description="Requests from assigned beneficiaries"
+          icon={Send}
           iconBgColor="bg-secondary text-primary border border-border"
         />
         <StatsCard
-          title="Today's Release Txns"
-          value="—"
-          description="Release totals are not included in this summary"
+          title="Approved requests"
+          value={stat("approvedRequests")}
+          description="Approved requests in your assigned caseload"
           icon={Building2}
           iconBgColor="bg-secondary text-primary border border-border"
         />
+        <StatsCard title="Rejected requests" value={stat("rejectedRequests")} description="Rejected requests in your assigned caseload" icon={PackageOpen} iconBgColor="bg-secondary text-primary border border-border" />
+        <StatsCard title="Today's distributions" value={stat("distributionsToday")} description={`Completed receipts · ₹${Number(stats?.distributionValueToday ?? 0).toLocaleString()}`} icon={Building2} iconBgColor="bg-secondary text-primary border border-border" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -172,7 +157,7 @@ export default function OfficerDashboard() {
                           {req.id}
                         </span>
                         <h3 className="font-bold text-xs text-foreground mt-0.5">
-                          {req.beneficiary_id || "Citizen Request"}
+                          {req.beneficiary_name || req.beneficiary_id || "Citizen Request"}
                         </h3>
                       </div>
                       {Number.isFinite(Number(req.ai_risk_score)) && req.ai_risk_score !== undefined && <RiskIndicator score={Number(req.ai_risk_score)} level={req.ai_risk_level || "LOW"} />}
@@ -198,6 +183,10 @@ export default function OfficerDashboard() {
               </div>
             )}
           </div>
+          <div className="bg-white border border-border p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3"><h2 className="font-bold text-sm text-foreground flex items-center gap-2"><Building2 className="size-4 text-primary" />Recent distributions</h2><Link href="/officer/distribution" className="text-xs font-semibold text-primary hover:underline">Open terminal</Link></div>
+            {recentDistributions.length === 0 ? <p className="py-5 text-center text-xs text-muted-foreground">No completed releases are recorded for your officer account.</p> : <ul className="space-y-3">{recentDistributions.slice(0, 5).map((row) => <li key={row.id} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0"><span className="min-w-0"><span className="block truncate font-mono text-xs font-semibold text-primary">{row.transactionCode}</span><span className="block truncate text-xs text-muted-foreground">Beneficiary {row.beneficiaryId}</span></span><span className="shrink-0 text-right text-xs text-foreground">₹{Number(row.totalCost || 0).toFixed(2)}<span className="block text-[10px] text-muted-foreground">{row.distributedAt ? new Date(row.distributedAt).toLocaleDateString() : "Date unavailable"}</span></span></li>)}</ul>}
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -217,13 +206,12 @@ export default function OfficerDashboard() {
 
             <div className="py-8 text-center space-y-2">
               <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-secondary text-primary border border-border">
-                <CheckCircle className="size-5" />
+                <AlertTriangle className="size-5" />
               </div>
-              <p className="text-xs font-semibold text-foreground">
-                Risk feed unavailable
-              </p>
+              <p className="text-2xl font-bold text-foreground">{stat("openAlerts")}</p>
+              <p className="text-xs font-semibold text-foreground">Open field risk alerts</p>
               <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                No officer-visible risk alert data source is connected to this dashboard.
+                Persisted alerts for beneficiaries assigned to your officer account.
               </p>
             </div>
           </div>

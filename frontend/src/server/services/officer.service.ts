@@ -1,5 +1,4 @@
 import { AuditService } from "@/server/services/audit.service";
-import { AIAnomalyService } from "@/server/services/ai-anomaly.service";
 
 const FASTAPI_URL = (
   process.env.FASTAPI_URL ||
@@ -13,16 +12,13 @@ function authHeaders(token?: string): Record<string, string> {
   return h;
 }
 
-// In-memory for non-critical data (distributions/change requests still use runtime state)
-const runtimeDistributions: any[] = [];
-
 export class ServerOfficerService {
   /**
    * Retrieves all BENEFICIARY accounts from the Python backend (MongoDB/SQLite).
    * Requires a valid officer Bearer token.
    */
   static async getBeneficiaries(token?: string) {
-    const res = await fetch(`${FASTAPI_URL}/api/auth/officer/beneficiaries`, {
+    const res = await fetch(`${FASTAPI_URL}/api/portal/officer/beneficiaries`, {
       method: "GET",
       headers: authHeaders(token),
       cache: "no-store",
@@ -37,51 +33,20 @@ export class ServerOfficerService {
     }
 
     return data.beneficiaries.map((u: any) => ({
-      id: u._id || u.id,
-      rationCardId:
-        u.ration_card_number ||
-        `RC-${String(u._id || u.id)
-          .slice(-6)
-          .toUpperCase()}`,
-      fullName: u.full_name || u.name || u.email,
+      id: u.id,
+      rationCardId: u.rationCardId || null,
+      fullName: u.fullName || "",
       email: u.email,
       phone: u.phone || "",
-      address: {
-        doorNo: "",
-        street: "",
-        district: u.jurisdiction || "",
-        state: "",
-        pincode: "",
-        pdsCenterId: "",
-        pdsCenterName: u.jurisdiction || "",
-      },
-      rationCategory: (u.card_category || "PHH") as any,
-      familyCount: 1,
-      familyMembers: [],
-      verificationStatus: (String(u.status || "ACTIVE").toUpperCase() ===
-      "ACTIVE"
-        ? "VERIFIED"
-        : "VERIFICATION_PENDING") as any,
-      riskScore: 5,
-      riskLevel: "LOW" as const,
-      currentHash: "0x000",
-      latestIPFSCid: "",
-      createdAt: u.created_at || new Date().toISOString(),
-      updatedAt: u.updated_at || new Date().toISOString(),
-      status:
-        String(u.status || "ACTIVE").toUpperCase() === "DEACTIVATED"
-          ? "INACTIVE"
-          : String(u.status || "ACTIVE").toUpperCase(),
-      eligibility: {
-        beneficiaryId: u._id || u.id,
-        category: (u.card_category || "PHH") as any,
-        monthlyEntitlements: [],
-        monthlyIncome: 0,
-        isBPL: true,
-        lastReviewedAt: new Date().toISOString(),
-        nextReviewDue: new Date().toISOString(),
-        status: "ELIGIBLE" as const,
-      },
+      address: u.address || { doorNo: "", street: "", district: "", state: "", pincode: "", pdsCenterId: "", pdsCenterName: "" },
+      rationCategory: u.rationCategory || null,
+      familyCount: Number(u.familyCount || 0),
+      familyMembers: u.familyMembers || [],
+      verificationStatus: u.verificationStatus || "PENDING",
+      createdAt: u.createdAt || "",
+      updatedAt: u.updatedAt || "",
+      status: String(u.status || "ACTIVE").toUpperCase(),
+      eligibility: u.eligibility,
     }));
   }
 
@@ -99,6 +64,8 @@ export class ServerOfficerService {
       walletAddress?: string;
       rationCardNumber?: string;
       cardCategory?: string;
+      addressData?: Record<string, string>;
+      monthlyIncome?: number | null;
     },
     officerId: string,
     ipAddress?: string,
@@ -124,6 +91,8 @@ export class ServerOfficerService {
           wallet_address: data.walletAddress || null,
           ration_card_number: data.rationCardNumber || null,
           card_category: data.cardCategory || null,
+          address_data: data.addressData || null,
+          monthly_income: data.monthlyIncome ?? null,
         }),
       },
     );
@@ -137,7 +106,9 @@ export class ServerOfficerService {
           responseData.detail.map((d: any) => d.msg).join("; ")) ||
         responseData.error ||
         `Failed to create beneficiary account (HTTP ${res.status}).`;
-      throw new Error(detail);
+      const error = new Error(detail) as Error & { status?: number };
+      error.status = res.status;
+      throw error;
     }
 
     await AuditService.recordEvent({
@@ -165,117 +136,6 @@ export class ServerOfficerService {
   }
 
   /**
-   * Executes a commodity distribution transaction with AI risk scan,
-   * SHA-256 state hash, and IPFS audit trail.
-   */
-  static async executeDistribution(params: {
-    beneficiaryId: string;
-    rationCardNumber: string;
-    fpsShopId: string;
-    officerId: string;
-    riceQty: number;
-    wheatQty: number;
-    sugarQty: number;
-    keroseneQty: number;
-    totalCost: number;
-    authMode: string;
-    ipAddress?: string;
-  }) {
-    const crypto = await import("crypto");
-    const distId = `txn-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
-    const transactionCode = `TXN-PDS-${new Date().getFullYear()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-    const now = new Date().toISOString();
-
-    const aiAssessment = await AIAnomalyService.evaluateDistribution({
-      beneficiaryId: params.beneficiaryId,
-      riceQty: params.riceQty,
-      wheatQty: params.wheatQty,
-      sugarQty: params.sugarQty,
-      keroseneQty: params.keroseneQty,
-      fpsShopId: params.fpsShopId,
-      authMode: params.authMode,
-    });
-
-    const { HashingService } =
-      await import("@/server/security/hashing.service");
-    const { IPFSService } = await import("@/server/security/ipfs.service");
-
-    const canonicalTxn = {
-      distId,
-      transactionCode,
-      beneficiaryId: params.beneficiaryId,
-      rationCardNumber: params.rationCardNumber,
-      fpsShopId: params.fpsShopId,
-      officerId: params.officerId,
-      riceQty: params.riceQty,
-      wheatQty: params.wheatQty,
-      sugarQty: params.sugarQty,
-      keroseneQty: params.keroseneQty,
-      totalCost: params.totalCost,
-      authMode: params.authMode,
-      timestamp: now,
-    };
-
-    const stateHash = HashingService.generateSHA256(canonicalTxn);
-    const ipfsUpload = await IPFSService.uploadManifest({
-      recordId: distId,
-      entityType: "DISTRIBUTION",
-      hashAlgorithm: "SHA-256",
-      integrityHash: stateHash,
-    });
-    const ipfsCid = ipfsUpload.cid;
-
-    const record = {
-      id: distId,
-      beneficiary_id: params.beneficiaryId,
-      ration_card_number: params.rationCardNumber,
-      fps_shop_id: params.fpsShopId,
-      officer_id: params.officerId,
-      rice_qty: params.riceQty,
-      wheat_qty: params.wheatQty,
-      sugar_qty: params.sugarQty,
-      kerosene_qty: params.keroseneQty,
-      total_cost: params.totalCost,
-      auth_mode: params.authMode,
-      transaction_code: transactionCode,
-      state_hash: stateHash,
-      ipfs_cid: ipfsCid,
-      status: "COMPLETED",
-      distributed_at: now,
-    };
-    runtimeDistributions.unshift(record);
-
-    await AuditService.recordEvent({
-      actorId: params.officerId,
-      actorRole: "OFFICER",
-      action: "DISTRIBUTE_COMMODITIES",
-      resource: "DISTRIBUTION",
-      resourceId: distId,
-      newState: {
-        transactionCode,
-        stateHash,
-        ipfsCid,
-        riceQty: params.riceQty,
-        wheatQty: params.wheatQty,
-        aiRiskScore: aiAssessment.riskScore,
-      },
-      ipAddress: params.ipAddress,
-      outcome:
-        aiAssessment.riskLevel === "CRITICAL" ? "ANOMALY_DETECTED" : "SUCCESS",
-    });
-
-    return {
-      id: distId,
-      transactionCode,
-      stateHash,
-      ipfsCid,
-      aiAssessment,
-      status: "COMPLETED",
-      message: "Commodity distribution verified and recorded on ledger.",
-    };
-  }
-
-  /**
    * Updates a BENEFICIARY account (officer can only edit BENEFICIARY role users).
    */
   static async updateBeneficiary(
@@ -285,6 +145,9 @@ export class ServerOfficerService {
       phone?: string;
       jurisdiction?: string;
       cardCategory?: string;
+      rationCardNumber?: string | null;
+      addressData?: Record<string, string>;
+      monthlyIncome?: number | null;
     },
     officerId: string,
     ipAddress?: string,
@@ -318,6 +181,9 @@ export class ServerOfficerService {
           phone: data.phone || null,
           jurisdiction: data.jurisdiction || null,
           card_category: data.cardCategory || null,
+          ration_card_number: data.rationCardNumber ?? null,
+          address_data: data.addressData,
+          monthly_income: data.monthlyIncome ?? null,
         }),
       },
     );

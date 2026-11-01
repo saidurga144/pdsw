@@ -5,13 +5,25 @@ import { useAuthStore } from "@/stores/auth.store";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ArrowRight, Cpu, Database, FileText, Users, ShieldCheck, UserCog, Activity } from "lucide-react";
 import Link from "next/link";
+import { apiClient } from "@/services/api/client";
 
 type PlatformStats = {
   totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
   admins: number;
   pdsOfficers: number;
   socAnalysts: number;
   beneficiaries: number;
+  pendingRequests: number;
+  approvedRequests: number;
+  rejectedRequests: number;
+  completedDistributions: number;
+  distributionsToday: number;
+  openAlerts: number;
+  recentRequests: Array<Record<string, unknown>>;
+  recentRegistrations: Array<Record<string, unknown>>;
+  recentActivity: Array<Record<string, unknown>>;
 };
 
 const adminTools = [
@@ -33,10 +45,10 @@ export default function AdminDashboard() {
     let active = true;
     async function loadStats() {
       try {
-        const response = await fetch("/api/admin/stats", { cache: "no-store" });
-        const data = await response.json();
-        if (!response.ok || !data.success || !data.stats) {
-          throw new Error(data.error || data.detail || "Platform statistics are unavailable.");
+        const response = await apiClient.get("/admin/stats", { headers: { "Cache-Control": "no-cache" } });
+        const data = response.data;
+        if (!data?.success || !data.stats) {
+          throw new Error(data?.error || data?.detail || "Platform statistics are unavailable.");
         }
         if (active) setStats(data.stats);
       } catch (cause) {
@@ -70,11 +82,31 @@ export default function AdminDashboard() {
 
       {error && <div role="alert" className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Could not load live platform counts: {error}</div>}
 
-      <section aria-label="Active account counts" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Active accounts" value={count(stats?.totalUsers)} description="Accounts returned by the platform service" icon={Users} />
-        <StatsCard title="Beneficiaries" value={count(stats?.beneficiaries)} description="Active beneficiary accounts" icon={Users} />
-        <StatsCard title="PDS officers" value={count(stats?.pdsOfficers)} description="Active officer accounts" icon={Activity} />
-        <StatsCard title="Administrators and SOC" value={loading || error ? "—" : ((stats?.admins ?? 0) + (stats?.socAnalysts ?? 0)).toLocaleString()} description={stats ? `${stats.admins} administrators · ${stats.socAnalysts} SOC analysts` : "Role counts unavailable"} icon={ShieldCheck} />
+      <section aria-label="Live platform statistics" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <StatsCard title="Registered accounts" value={count(stats?.totalUsers)} description="All roles in the account store" icon={Users} />
+        <StatsCard title="Active accounts" value={count(stats?.activeUsers)} description="Accounts currently active" icon={Activity} />
+        <StatsCard title="Inactive accounts" value={count(stats?.inactiveUsers)} description="Inactive or suspended accounts" icon={ShieldCheck} />
+        <StatsCard title="Beneficiaries" value={count(stats?.beneficiaries)} description="Registered beneficiary accounts" icon={Users} />
+        <StatsCard title="PDS officers" value={count(stats?.pdsOfficers)} description="Registered officer accounts" icon={Activity} />
+        <StatsCard title="Pending requests" value={count(stats?.pendingRequests)} description={`${stats?.approvedRequests ?? 0} approved · ${stats?.rejectedRequests ?? 0} rejected`} icon={FileText} />
+        <StatsCard title="Completed distributions" value={count(stats?.completedDistributions)} description={`${stats?.distributionsToday ?? 0} completed today`} icon={Database} />
+        <StatsCard title="Open risk alerts" value={count(stats?.openAlerts)} description="Persisted, unacknowledged alerts" icon={ShieldCheck} />
+        <StatsCard title="Admin and SOC accounts" value={loading || error ? "—" : ((stats?.admins ?? 0) + (stats?.socAnalysts ?? 0)).toLocaleString()} description={stats ? `${stats.admins} administrators · ${stats.socAnalysts} SOC analysts` : "Role counts unavailable"} icon={Cpu} />
+      </section>
+
+      <section aria-label="Recent platform activity" className="grid gap-4 xl:grid-cols-3">
+        <div className="border border-border bg-white p-5">
+          <h2 className="mb-3 border-b border-border pb-3 text-sm font-semibold text-foreground">Recent registrations</h2>
+          {!loading && !error && (stats?.recentRegistrations?.length ?? 0) === 0 ? <p className="text-xs text-muted-foreground">No registration records are available.</p> : <ul className="space-y-3">{(stats?.recentRegistrations ?? []).slice(0, 6).map((row, index) => <li key={String(row.id ?? index)} className="flex items-start justify-between gap-3 text-xs"><span className="min-w-0"><span className="block truncate font-semibold text-foreground">{String(row.name || "Unnamed account")}</span><span className="font-mono text-[10px] text-muted-foreground">{String(row.role || "")}</span></span><time className="shrink-0 text-[10px] text-muted-foreground">{row.createdAt ? new Date(String(row.createdAt)).toLocaleDateString() : "Date unavailable"}</time></li>)}</ul>}
+        </div>
+        <div className="border border-border bg-white p-5">
+          <h2 className="mb-3 border-b border-border pb-3 text-sm font-semibold text-foreground">Recent change requests</h2>
+          {!loading && !error && (stats?.recentRequests?.length ?? 0) === 0 ? <p className="text-xs text-muted-foreground">No request records are available.</p> : <ul className="space-y-3">{(stats?.recentRequests ?? []).slice(0, 6).map((row, index) => <li key={String(row.id ?? index)} className="flex items-start justify-between gap-3 text-xs"><span className="min-w-0"><span className="block truncate font-mono font-semibold text-primary">{String(row.id || "Request")}</span><span className="block truncate text-foreground">{String(row.beneficiaryName || "Beneficiary")} · {String(row.type || "")}</span></span><span className="shrink-0 text-[10px] text-muted-foreground">{String(row.status || "")}</span></li>)}</ul>}
+        </div>
+        <div className="border border-border bg-white p-5">
+          <h2 className="mb-3 border-b border-border pb-3 text-sm font-semibold text-foreground">Administrative activity</h2>
+          {!loading && !error && (stats?.recentActivity?.length ?? 0) === 0 ? <p className="text-xs text-muted-foreground">No audit events are available from the configured audit store.</p> : <ul className="space-y-3">{(stats?.recentActivity ?? []).slice(0, 6).map((row, index) => <li key={`${String(row.actorId)}-${String(row.timestamp)}-${index}`} className="flex items-start justify-between gap-3 text-xs"><span className="min-w-0"><span className="block truncate font-semibold text-foreground">{String(row.action || "Recorded event")}</span><span className="font-mono text-[10px] text-muted-foreground">{String(row.role || "")} · {String(row.actorId || "")}</span></span><time className="shrink-0 text-[10px] text-muted-foreground">{row.timestamp ? new Date(String(row.timestamp)).toLocaleDateString() : "Date unavailable"}</time></li>)}</ul>}
+        </div>
       </section>
 
       <section>

@@ -64,8 +64,10 @@ const EMPTY_FORM = {
   district: "",
   state: "",
   pincode: "",
+  rationCardNumber: "",
+  pdsCenterId: "",
+  pdsCenterName: "",
   category: "PHH",
-  familyCount: 1,
   income: "",
 };
 
@@ -96,7 +98,15 @@ export default function OfficerBeneficiaryManagementPage() {
   const [editForm, setEditForm] = useState({
     fullName: "",
     phone: "",
+    rationCardNumber: "",
+    doorNo: "",
+    street: "",
     district: "",
+    state: "",
+    pincode: "",
+    pdsCenterId: "",
+    pdsCenterName: "",
+    monthlyIncome: "",
     category: "PHH",
   });
   const [editError, setEditError] = useState("");
@@ -220,7 +230,17 @@ export default function OfficerBeneficiaryManagementPage() {
           phone: form.phone || null,
           jurisdiction: form.district || null,
           cardCategory: form.category,
-          rationCardNumber: null,
+          rationCardNumber: form.rationCardNumber.trim() || null,
+          addressData: {
+            door_no: form.doorNo.trim(),
+            street: form.street.trim(),
+            district: form.district.trim(),
+            state: form.state.trim(),
+            pincode: form.pincode.trim(),
+            pds_center_id: form.pdsCenterId.trim(),
+            pds_center_name: form.pdsCenterName.trim(),
+          },
+          monthlyIncome: form.income ? Number(form.income) : null,
           walletAddress: null,
         }),
       });
@@ -255,7 +275,15 @@ export default function OfficerBeneficiaryManagementPage() {
     setEditForm({
       fullName: b.fullName || "",
       phone: (b as any).phone || "",
+      rationCardNumber: b.rationCardId || "",
+      doorNo: b.address?.doorNo || "",
+      street: b.address?.street || "",
       district: b.address?.district || "",
+      state: b.address?.state || "",
+      pincode: b.address?.pincode || "",
+      pdsCenterId: b.address?.pdsCenterId || "",
+      pdsCenterName: b.address?.pdsCenterName || "",
+      monthlyIncome: b.eligibility?.monthlyIncome == null ? "" : String(b.eligibility.monthlyIncome),
       category: b.rationCategory || "PHH",
     });
     setEditError("");
@@ -278,8 +306,19 @@ export default function OfficerBeneficiaryManagementPage() {
           body: JSON.stringify({
             fullName: editForm.fullName.trim(),
             phone: editForm.phone || null,
-            jurisdiction: editForm.district || null,
+            jurisdiction: [editForm.district, editForm.state].filter(Boolean).join(", ") || null,
             cardCategory: editForm.category,
+            rationCardNumber: editForm.rationCardNumber.trim() || null,
+            addressData: {
+              door_no: editForm.doorNo.trim(),
+              street: editForm.street.trim(),
+              district: editForm.district.trim(),
+              state: editForm.state.trim(),
+              pincode: editForm.pincode.trim(),
+              pds_center_id: editForm.pdsCenterId.trim(),
+              pds_center_name: editForm.pdsCenterName.trim(),
+            },
+            monthlyIncome: editForm.monthlyIncome === "" ? null : Number(editForm.monthlyIncome),
           }),
         },
       );
@@ -870,6 +909,44 @@ export default function OfficerBeneficiaryManagementPage() {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold text-foreground block mb-1">
+                          Ration Card Number
+                        </label>
+                        <input
+                          type="text"
+                          value={form.rationCardNumber}
+                          onChange={(e) => setForm({ ...form, rationCardNumber: e.target.value.trimStart() })}
+                          placeholder="Enter the issued card number"
+                          className={inp}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-foreground block mb-1">
+                          Fair Price Shop ID
+                        </label>
+                        <input
+                          type="text"
+                          value={form.pdsCenterId}
+                          onChange={(e) => setForm({ ...form, pdsCenterId: e.target.value.trimStart() })}
+                          placeholder="Assigned FPS identifier"
+                          className={inp}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-foreground block mb-1">
+                        Fair Price Shop Name
+                      </label>
+                      <input
+                        type="text"
+                        value={form.pdsCenterName}
+                        onChange={(e) => setForm({ ...form, pdsCenterName: e.target.value })}
+                        placeholder="Assigned shop name"
+                        className={inp}
+                      />
+                    </div>
                   </div>
                 )}
                 {step === 4 && (
@@ -894,25 +971,7 @@ export default function OfficerBeneficiaryManagementPage() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-foreground block mb-1">
-                        Family Dependents
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={12}
-                        value={form.familyCount}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            familyCount: parseInt(e.target.value) || 1,
-                          })
-                        }
-                        className={inp}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-foreground block mb-1">
-                        Annual Income (₹)
+                        Monthly Household Income (₹)
                       </label>
                       <input
                         type="text"
@@ -923,7 +982,7 @@ export default function OfficerBeneficiaryManagementPage() {
                             income: e.target.value.replace(/\D/g, ""),
                           })
                         }
-                        placeholder="96000"
+                        placeholder="Enter monthly household amount"
                         className={inp}
                       />
                     </div>
@@ -957,6 +1016,10 @@ export default function OfficerBeneficiaryManagementPage() {
                         </span>
                       </p>
                       <p>
+                        <span className="text-muted-foreground">Ration Card:</span>{" "}
+                        <span>{form.rationCardNumber || "Not provided"}</span>
+                      </p>
+                      <p>
                         <span className="text-muted-foreground">Address:</span>{" "}
                         <span>
                           {[
@@ -969,6 +1032,14 @@ export default function OfficerBeneficiaryManagementPage() {
                             .filter(Boolean)
                             .join(", ") || "—"}
                         </span>
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">FPS:</span>{" "}
+                        <span>{[form.pdsCenterId, form.pdsCenterName].filter(Boolean).join(" — ") || "Not assigned"}</span>
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Monthly Income:</span>{" "}
+                        <span>{form.income ? `₹${form.income}` : "Not recorded"}</span>
                       </p>
                     </div>
                     <p className="text-muted-foreground text-[11px]">
@@ -1085,18 +1156,10 @@ export default function OfficerBeneficiaryManagementPage() {
                   className={`${inp} font-mono`}
                 />
               </div>
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1">
-                  District / Jurisdiction
-                </label>
-                <input
-                  type="text"
-                  value={editForm.district}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, district: e.target.value })
-                  }
-                  className={inp}
-                />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {([["rationCardNumber", "Ration Card Number"], ["doorNo", "Door / House Number"], ["street", "Street / Village"], ["district", "District"], ["state", "State"], ["pincode", "PIN Code"], ["pdsCenterId", "Fair Price Shop ID"], ["pdsCenterName", "Fair Price Shop Name"], ["monthlyIncome", "Monthly Household Income (₹)"]] as const).map(([key, label]) => (
+                  <label key={key} className="block text-xs font-semibold text-foreground">{label}<input type={key === "monthlyIncome" ? "number" : "text"} min={key === "monthlyIncome" ? 0 : undefined} step={key === "monthlyIncome" ? "1" : undefined} value={editForm[key]} onChange={(event) => setEditForm({ ...editForm, [key]: event.target.value })} className={`${inp} mt-1`} /></label>
+                ))}
               </div>
               <div>
                 <label className="text-xs font-semibold text-foreground block mb-1">

@@ -9,7 +9,7 @@ const FASTAPI_URL = (
 export async function proxyFastApiJson(
   request: NextRequest,
   path: string,
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
   body?: unknown,
 ): Promise<NextResponse> {
   const token =

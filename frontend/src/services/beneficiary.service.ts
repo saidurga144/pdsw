@@ -1,6 +1,5 @@
 import { Beneficiary, ChangeRequest, SupportingDocument } from "@/types";
 import { apiClient } from "./api/client";
-import { useAuthStore } from "@/stores/auth.store";
 
 function mapChangeRequest(record: any): ChangeRequest {
   return {
@@ -26,10 +25,9 @@ function mapChangeRequest(record: any): ChangeRequest {
       fileSize: document.file_size ?? document.fileSize ?? 0,
       mimeType: document.mime_type ?? document.mimeType ?? "application/octet-stream",
     })) as SupportingDocument[],
-    aiRiskScore: record.ai_risk_score ?? record.aiRiskScore ?? 5,
-    aiRiskLevel: record.ai_risk_level ?? record.aiRiskLevel ?? "LOW",
-    aiExplainabilityNotes:
-      record.ai_explainability_notes ?? record.aiExplainabilityNotes ?? [],
+    ...(record.ai_risk_score != null || record.aiRiskScore != null ? { aiRiskScore: record.ai_risk_score ?? record.aiRiskScore } : {}),
+    ...(record.ai_risk_level || record.aiRiskLevel ? { aiRiskLevel: record.ai_risk_level ?? record.aiRiskLevel } : {}),
+    ...(record.ai_explainability_notes || record.aiExplainabilityNotes ? { aiExplainabilityNotes: record.ai_explainability_notes ?? record.aiExplainabilityNotes } : {}),
     officerRemarks: record.review_notes ?? record.officerRemarks,
     reviewedBy: record.reviewed_by ?? record.reviewedBy,
     reviewedAt: record.reviewed_at ?? record.reviewedAt,
@@ -41,94 +39,8 @@ export class BeneficiaryService {
    * Retrieves the current authenticated beneficiary's own profile
    */
   static async getMyProfile(): Promise<Beneficiary | null> {
-    try {
-      const res = await apiClient.get("/beneficiary/profile");
-      if (res.data?.success && res.data.profile) {
-        return res.data.profile;
-      }
-    } catch (error) {
-      console.warn("⚠️ [BeneficiaryService.getMyProfile API Error]", error);
-    }
-
-    // Fallback constructed strictly from the authenticated user's state
-    const currentUser = useAuthStore.getState().user;
-    if (currentUser) {
-      const benId =
-        currentUser.beneficiaryId ||
-        `ben-${currentUser.id.replace(/^usr-/, "")}`;
-      const district =
-        currentUser.jurisdiction?.split(",")[0]?.trim() || "South Delhi";
-      const state = currentUser.jurisdiction?.split(",")[1]?.trim() || "Delhi";
-      return {
-        id: benId,
-        rationCardId: `RC-${currentUser.id.slice(-6).toUpperCase()}`,
-        fullName: currentUser.name || "Citizen User",
-        phone: currentUser.phone || "+91 98765 43210",
-        address: {
-          doorNo: "H-42",
-          street: "Block B, Sector 4",
-          district,
-          state,
-          pincode: "110016",
-          pdsCenterId: `FPS-${district.slice(0, 3).toUpperCase()}-102`,
-          pdsCenterName: `Fair Price Shop #102, ${district}`,
-        },
-        rationCategory: "PHH",
-        familyCount: 1,
-        familyMembers: [
-          {
-            id: `fm-${currentUser.id}-1`,
-            beneficiaryId: benId,
-            fullName: currentUser.name || "Citizen User",
-            relationship: "HEAD",
-            age: 35,
-            gender: "MALE",
-            uidHash: `0x${currentUser.id.slice(-8)}`,
-            verificationStatus: "VERIFIED",
-            addedAt: new Date().toISOString(),
-          },
-        ],
-        eligibility: {
-          beneficiaryId: benId,
-          category: "PHH",
-          monthlyEntitlements: [
-            {
-              commodity: "Rice (Fortified)",
-              quantity: 20,
-              unit: "KG",
-              subsidizedPricePerUnit: 3.0,
-            },
-            {
-              commodity: "Wheat (Whole Grain)",
-              quantity: 15,
-              unit: "KG",
-              subsidizedPricePerUnit: 2.0,
-            },
-            {
-              commodity: "Refined Sugar",
-              quantity: 2,
-              unit: "KG",
-              subsidizedPricePerUnit: 13.5,
-            },
-          ],
-          monthlyIncome: 10000,
-          isBPL: true,
-          lastReviewedAt: new Date().toISOString(),
-          nextReviewDue: new Date(
-            Date.now() + 365 * 24 * 60 * 60 * 1000,
-          ).toISOString(),
-          status: "ELIGIBLE",
-        },
-        verificationStatus: "VERIFIED",
-        riskScore: 6,
-        riskLevel: "LOW",
-        currentHash: `0x${currentUser.id.slice(-12)}`,
-        latestIPFSCid: `Qm${currentUser.id.slice(-16)}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    }
-
+    const res = await apiClient.get("/beneficiary/profile");
+    if (res.data?.success && res.data.profile) return res.data.profile;
     return null;
   }
 

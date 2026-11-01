@@ -51,32 +51,33 @@ export interface FamilyMember {
   fullName: string;
   relationship:
     "HEAD" | "SPOUSE" | "SON" | "DAUGHTER" | "FATHER" | "MOTHER" | "OTHER";
-  age: number;
-  gender: "MALE" | "FEMALE" | "OTHER";
-  uidHash: string;
+  age?: number;
+  gender: "MALE" | "FEMALE" | "OTHER" | null;
+  uidHash?: string;
+  identityLastFour?: string | null;
   verificationStatus: "VERIFIED" | "PENDING" | "REJECTED";
   addedAt: string;
 }
 
 export interface Eligibility {
   beneficiaryId: string;
-  category: RationCategory;
+  category: RationCategory | null;
   monthlyEntitlements: {
     commodity: string;
     quantity: number;
     unit: string;
     subsidizedPricePerUnit: number;
   }[];
-  monthlyIncome: number;
-  isBPL: boolean;
-  lastReviewedAt: string;
-  nextReviewDue: string;
-  status: "ELIGIBLE" | "SUSPENDED" | "UNDER_REVIEW" | "INELIGIBLE";
+  monthlyIncome: number | null;
+  isBPL: boolean | null;
+  lastReviewedAt: string | null;
+  nextReviewDue: string | null;
+  status: "ELIGIBLE" | "SUSPENDED" | "UNDER_REVIEW" | "INELIGIBLE" | "NOT_CONFIGURED";
 }
 
 export interface Beneficiary {
   id: string;
-  rationCardId: string;
+  rationCardId: string | null;
   fullName: string;
   phone: string;
   address: {
@@ -88,15 +89,15 @@ export interface Beneficiary {
     pdsCenterId: string;
     pdsCenterName: string;
   };
-  rationCategory: RationCategory;
+  rationCategory: RationCategory | null;
   familyCount: number;
   familyMembers: FamilyMember[];
   eligibility: Eligibility;
   verificationStatus: "VERIFIED" | "PENDING" | "FLAGGED" | "DEACTIVATED";
-  riskScore: number; // 0-100
-  riskLevel: "LOW" | "MEDIUM" | "HIGH";
-  currentHash: string;
-  latestIPFSCid: string;
+  riskScore?: number | null; // Only present after a real risk score is computed
+  riskLevel?: "LOW" | "MEDIUM" | "HIGH" | null;
+  currentHash?: string | null;
+  latestIPFSCid?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,9 +142,9 @@ export interface ChangeRequest {
   requestedData: Record<string, any>;
   reason: string;
   supportingDocuments: SupportingDocument[];
-  aiRiskScore: number;
-  aiRiskLevel: "LOW" | "MEDIUM" | "HIGH";
-  aiExplainabilityNotes: string[];
+  aiRiskScore?: number;
+  aiRiskLevel?: "LOW" | "MEDIUM" | "HIGH";
+  aiExplainabilityNotes?: string[];
   officerRemarks?: string;
   reviewedBy?: string;
   reviewedAt?: string;

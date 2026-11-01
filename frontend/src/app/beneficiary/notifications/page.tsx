@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useNotificationStore } from "@/stores/notification.store";
 import { CheckCheck, Bell } from "lucide-react";
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, loadNotifications, isLoading, error } = useNotificationStore();
+
+  useEffect(() => { void loadNotifications(); }, [loadNotifications]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -26,7 +28,10 @@ export default function NotificationsPage() {
       </div>
 
       <div className="space-y-3">
-        {notifications.length === 0 ? (
+        {error && <div role="alert" className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+        {isLoading ? (
+          <div role="status" className="rounded-md border border-border bg-card p-8 text-center text-sm text-muted-foreground">Loading notifications…</div>
+        ) : notifications.length === 0 ? (
           <div className="bg-card border border-border rounded-md p-10 text-center space-y-2 shadow-subtle">
             <Bell className="size-8 text-muted-foreground mx-auto opacity-40" />
             <p className="text-sm font-semibold text-foreground">

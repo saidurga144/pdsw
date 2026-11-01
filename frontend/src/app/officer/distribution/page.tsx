@@ -24,6 +24,7 @@ export default function OfficerDistributionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [receipt, setReceipt] = useState<any | null>(null);
   const [error, setError] = useState("");
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const handleLookup = async () => {
     setError("");
@@ -49,6 +50,7 @@ export default function OfficerDistributionPage() {
 
       if (found) {
         setSelectedBeneficiary(found);
+        setQuantities(Object.fromEntries(found.eligibility.monthlyEntitlements.map((item) => [item.commodity, 0])));
       } else {
         setError(
           `No beneficiary record found matching "${searchId}". Please check the ID or ration card number and try again.`,
@@ -67,31 +69,45 @@ export default function OfficerDistributionPage() {
 
   const handleConfirmRelease = async () => {
     if (!selectedBeneficiary) return;
-    setIsProcessing(true);
-    const commodities = selectedBeneficiary.eligibility.monthlyEntitlements.map(
-      (e, idx) => ({
+    setError("");
+    const fpsShopId = selectedBeneficiary.address?.pdsCenterId?.trim();
+    if (!fpsShopId) {
+      setError("This beneficiary has no Fair Price Shop ID on record. Update the beneficiary assignment before releasing commodities.");
+      return;
+    }
+    const commodities = selectedBeneficiary.eligibility.monthlyEntitlements
+      .filter((item) => Number(quantities[item.commodity]) > 0)
+      .map((item, idx) => ({
         id: `c-${idx}`,
-        name: e.commodity,
-        quantity: e.quantity,
-        unit: e.unit,
-        pricePerUnit: e.subsidizedPricePerUnit,
-        totalPrice: e.quantity * e.subsidizedPricePerUnit,
-      }),
-    );
-    const totalAmount = commodities.reduce(
-      (acc, curr) => acc + curr.totalPrice,
-      0,
-    );
-
-    const dist = await TransactionService.createDistribution({
-      beneficiaryId: selectedBeneficiary.id,
-      beneficiaryName: selectedBeneficiary.fullName,
-      rationCardId: selectedBeneficiary.rationCardId,
-      commodities,
-      totalAmount,
-    });
-    setIsProcessing(false);
-    setReceipt(dist);
+        name: item.commodity,
+        quantity: Number(quantities[item.commodity]),
+        unit: item.unit,
+        pricePerUnit: item.subsidizedPricePerUnit,
+        totalPrice: Number(quantities[item.commodity]) * item.subsidizedPricePerUnit,
+      }));
+    if (!commodities.length) {
+      setError("Enter a positive quantity for at least one commodity.");
+      return;
+    }
+    const totalAmount = commodities.reduce((acc, curr) => acc + curr.totalPrice, 0);
+    setIsProcessing(true);
+    try {
+      const dist = await TransactionService.createDistribution({
+        beneficiaryId: selectedBeneficiary.id,
+        beneficiaryName: selectedBeneficiary.fullName,
+        rationCardId: selectedBeneficiary.rationCardId || "",
+        pdsCenterId: fpsShopId,
+        officerId: user?.id || "",
+        commodities,
+        totalAmount,
+        verificationMethod: "OFFICER_VERIFIED",
+      });
+      setReceipt(dist);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The distribution could not be recorded.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -101,7 +117,7 @@ export default function OfficerDistributionPage() {
           Commodity Distribution Terminal
         </h1>
         <p className="text-xs text-muted-foreground">
-          Fair Price Shop • Biometric & Entitlement Verification Release
+          Fair Price Shop • Entitlement Verification and Release
         </p>
       </div>
 
@@ -149,9 +165,7 @@ export default function OfficerDistributionPage() {
               Terminal Ready
             </h3>
             <p className="empty-state-description text-muted-foreground max-w-sm mx-auto">
-              Scan a citizen&apos;s QR code or enter their Beneficiary ID above
-              to verify entitlements and execute biometrically authenticated
-              distribution.
+              Enter an assigned beneficiary ID or ration card number to load the recorded eligibility and shop information.
             </p>
           </div>
         </div>
@@ -169,7 +183,7 @@ export default function OfficerDistributionPage() {
                 </h2>
               </div>
               <span className="shrink-0 px-3 py-1 bg-secondary text-foreground font-mono text-xs font-bold rounded-full border border-border">
-                ELIGIBLE ({selectedBeneficiary.rationCategory})
+                {selectedBeneficiary.verificationStatus} ({selectedBeneficiary.rationCategory || "Category not configured"})
               </span>
             </div>
 
@@ -177,7 +191,7 @@ export default function OfficerDistributionPage() {
               <h3 className="font-bold text-xs uppercase tracking-wider text-muted-foreground">
                 Available Quota Selection
               </h3>
-              {selectedBeneficiary.eligibility.monthlyEntitlements.map(
+              {selectedBeneficiary.eligibility.monthlyEntitlements.length === 0 ? <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">No entitlement rules are configured for this beneficiary category.</p> : selectedBeneficiary.eligibility.monthlyEntitlements.map(
                 (item) => (
                   <div
                     key={item.commodity}
@@ -192,14 +206,11 @@ export default function OfficerDistributionPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <span className="font-mono text-sm font-bold text-primary">
-                        {item.quantity} {item.unit}
-                      </span>
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="size-4 accent-[#6F8A77] rounded"
-                      />
+                      <span className="text-xs text-muted-foreground">Monthly limit: {item.quantity} {item.unit}</span>
+                      <label className="flex items-center gap-2 text-xs text-foreground">Release
+                        <input type="number" min="0" max={item.quantity} step="any" value={quantities[item.commodity] ?? 0} onChange={(event) => setQuantities((current) => ({ ...current, [item.commodity]: Math.min(item.quantity, Math.max(0, Number(event.target.value) || 0)) }))} className="w-24 rounded border border-border bg-background px-2 py-1.5 text-right font-mono" />
+                        {item.unit}
+                      </label>
                     </div>
                   </div>
                 ),
@@ -208,7 +219,7 @@ export default function OfficerDistributionPage() {
 
             <div className="pt-2 border-t border-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs text-muted-foreground">
-                Biometric Authenticator: READY
+                Officer confirmation: required
               </span>
               <button
                 onClick={handleConfirmRelease}
@@ -216,7 +227,7 @@ export default function OfficerDistributionPage() {
                 className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider rounded-md shadow-subtle transition-all"
               >
                 {isProcessing
-                  ? "Processing Biometric..."
+                  ? "Recording distribution..."
                   : "Confirm Commodity Release"}
               </button>
             </div>
@@ -229,7 +240,7 @@ export default function OfficerDistributionPage() {
             <p className="text-muted-foreground">
               FPS Terminal:{" "}
               <span className="font-mono text-foreground">
-                {user?.assignedDistrict || user?.jurisdiction || "FPS-PRIMARY"}
+                {selectedBeneficiary.address?.pdsCenterId || "Not assigned"}
               </span>
             </p>
             <p className="text-muted-foreground">
@@ -239,7 +250,7 @@ export default function OfficerDistributionPage() {
               </span>
             </p>
             <div className="p-3 bg-secondary text-primary border border-border rounded-md font-mono text-[11px] flex items-center gap-2">
-              <ShieldCheck className="size-4" /> State Hash Lock Active
+              <ShieldCheck className="size-4" /> A SHA-256 receipt digest is generated when saved
             </div>
           </div>
         </div>
@@ -250,7 +261,7 @@ export default function OfficerDistributionPage() {
           <div className="responsive-modal-panel responsive-modal-panel-sm font-mono text-xs">
             <div className="responsive-modal-header flex items-center justify-between gap-3 font-sans">
               <span className="min-w-0 font-bold text-base text-primary">
-                Distribution Success!
+                Distribution recorded
               </span>
               <button
                 onClick={() => setReceipt(null)}
@@ -261,16 +272,15 @@ export default function OfficerDistributionPage() {
               </button>
             </div>
             <div className="responsive-modal-body space-y-3">
-              <p className="font-sans text-xs text-muted-foreground">
-                Receipt pinned to IPFS CID:
-              </p>
+              <p className="font-sans text-xs text-muted-foreground">The distribution was saved to the application database.</p>
+              <p className="font-sans text-[11px] text-muted-foreground">Transaction: <span className="font-mono text-foreground">{receipt.transactionId}</span></p>
               <p className="bg-muted/40 p-2.5 rounded border border-border text-primary technical-value-wrap text-[11px]">
-                {receipt.ipfsCid}
+                SHA-256 record digest: {receipt.receiptHash || "Not returned"}
               </p>
             </div>
             <div className="responsive-modal-footer">
               <button
-                onClick={() => setReceipt(null)}
+                onClick={() => { window.print(); setReceipt(null); }}
                 className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-sans font-semibold text-xs rounded-md shadow-subtle transition-all"
               >
                 Done & Print Receipt

@@ -12,6 +12,8 @@ import {
   ExternalLink,
   PackageOpen,
   Loader2,
+  Printer,
+  AlertCircle,
 } from "lucide-react";
 
 export default function BeneficiaryTransactionsPage() {
@@ -20,6 +22,7 @@ export default function BeneficiaryTransactionsPage() {
   const [search, setSearch] = useState("");
   const [transactions, setTransactions] = useState<Distribution[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -28,16 +31,18 @@ export default function BeneficiaryTransactionsPage() {
         return;
       }
       try {
+        setLoadError("");
         const res = await apiClient.get(
-          `/beneficiary/transactions?beneficiaryId=${encodeURIComponent(user.id)}`,
+          "/beneficiary/transactions",
         );
         if (res.data?.success && Array.isArray(res.data.transactions)) {
           setTransactions(res.data.transactions);
         } else {
-          setTransactions([]);
+          throw new Error(res.data?.detail || res.data?.error || "Distribution history could not be loaded.");
         }
-      } catch {
+      } catch (cause) {
         setTransactions([]);
+        setLoadError(cause instanceof Error ? cause.message : "Distribution history could not be loaded.");
       } finally {
         setLoading(false);
       }
@@ -60,8 +65,7 @@ export default function BeneficiaryTransactionsPage() {
             Distribution Receipts & Transaction History
           </h1>
           <p className="text-xs text-muted-foreground">
-            View biometrically validated ration collection logs and IPFS receipt
-            anchors
+            View completed distribution records and their stored SHA-256 receipt digests. IPFS is shown only when a receipt has actually been pinned.
           </p>
         </div>
 
@@ -78,6 +82,8 @@ export default function BeneficiaryTransactionsPage() {
           </div>
         )}
       </div>
+
+      {loadError && <div role="alert" className="flex items-start gap-2 border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" />{loadError}</div>}
 
       {loading ? (
         <div className="bg-card border border-border rounded-md p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
@@ -112,8 +118,8 @@ export default function BeneficiaryTransactionsPage() {
                 <th className="px-4 py-3">PDS Center</th>
                 <th className="px-4 py-3">Commodities</th>
                 <th className="px-4 py-3">Total Paid</th>
-                <th className="px-4 py-3">Verification</th>
-                <th className="px-4 py-3 text-right">IPFS Receipt</th>
+                <th className="px-4 py-3">Confirmation</th>
+                <th className="px-4 py-3 text-right">Receipt Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -138,7 +144,7 @@ export default function BeneficiaryTransactionsPage() {
                   </td>
                   <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1 text-primary">
-                      <ShieldCheck className="size-3.5" /> Biometric Verified
+                      <ShieldCheck className="size-3.5" /> {d.verificationMethod === "OFFICER_VERIFIED" ? "Officer confirmed" : d.verificationMethod === "OTP_SIMULATED" ? "OTP (simulated)" : d.verificationMethod === "BIOMETRIC_SIMULATED" ? "Biometric (simulated)" : d.verificationMethod || "Recorded"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -159,7 +165,7 @@ export default function BeneficiaryTransactionsPage() {
 
       {selectedTxn && (
         <div className="responsive-modal-overlay">
-          <div className="responsive-modal-panel responsive-modal-panel-sm">
+          <div id="pdsw-print-receipt" className="responsive-modal-panel responsive-modal-panel-sm">
             <div className="responsive-modal-header flex items-center justify-between gap-3">
               <h3 className="min-w-0 font-bold text-base">
                 Cryptographic Receipt Proof
@@ -203,13 +209,25 @@ export default function BeneficiaryTransactionsPage() {
                 <p className="text-muted-foreground">
                   IPFS CID:{" "}
                   <span className="font-mono text-foreground technical-value-wrap">
-                    {selectedTxn.ipfsCid}
+                    {selectedTxn.ipfsCid || "No IPFS pin recorded"}
                   </span>
                 </p>
+                <div className="border-t border-border pt-2">
+                  <p className="mb-1 font-semibold text-foreground">Distributed commodities</p>
+                  {(selectedTxn.commodities || []).map((item, index) => <p key={`${item.name}-${index}`} className="text-muted-foreground">{item.name}: {item.quantity} {item.unit} · ₹{Number(item.totalPrice ?? item.quantity * item.pricePerUnit).toFixed(2)}</p>)}
+                  <p className="mt-1 font-semibold text-foreground">Total paid: ₹{Number(selectedTxn.totalAmount || 0).toFixed(2)}</p>
+                </div>
               </div>
             </div>
 
-            <div className="responsive-modal-footer flex justify-end">
+            <div className="responsive-modal-footer flex justify-between">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 border border-border px-4 py-2 text-xs font-semibold text-foreground"
+              >
+                <Printer className="size-4" /> Print receipt
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedTxn(null)}
@@ -221,6 +239,7 @@ export default function BeneficiaryTransactionsPage() {
           </div>
         </div>
       )}
+      <style jsx global>{`@media print { body * { visibility: hidden !important; } #pdsw-print-receipt, #pdsw-print-receipt * { visibility: visible !important; } #pdsw-print-receipt { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; max-width: none !important; border: 0 !important; box-shadow: none !important; } #pdsw-print-receipt button { display: none !important; } }`}</style>
     </div>
   );
 }

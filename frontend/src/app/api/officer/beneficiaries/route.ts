@@ -45,7 +45,7 @@ export const POST = withAuth(
           success: false,
           error: err.message || "Failed to create beneficiary account.",
         },
-        { status: 400 },
+        { status: typeof err?.status === "number" ? err.status : 400 },
       );
     }
   },

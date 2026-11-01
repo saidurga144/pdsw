@@ -1,137 +1,36 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-  ShieldCheck,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-  Lock,
-  Loader2,
-} from "lucide-react";
-import { Beneficiary } from "@/types";
-import { useAuthStore } from "@/stores/auth.store";
-import { useBeneficiaryStore } from "@/stores/beneficiary.store";
-import { HashComparison } from "@/components/integrity/HashComparison";
+import React, { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/services/api/client";
+import { AlertCircle, ChevronDown, ChevronUp, FileText, Loader2, ShieldAlert } from "lucide-react";
+
+type IntegrityDocument = { documentId: string; ipfsCid?: string | null; fileHash?: string | null; transactionHash?: string | null; recordedAt?: string | null; status?: string };
+type Verification = { status: string; currentRecordHash: string; lastVerifiedAt: string | null; explanation: string; documents: IntegrityDocument[] };
 
 export default function CitizenIntegrityPage() {
-  const { user } = useAuthStore();
-  const {
-    profile: beneficiary,
-    isLoading: loading,
-    ensureLoaded,
-  } = useBeneficiaryStore();
+  const [verification, setVerification] = useState<Verification | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showTechnical, setShowTechnical] = useState(false);
-
-  useEffect(() => {
-    ensureLoaded(user);
-  }, [user?.id]);
-
-  if (loading && !beneficiary) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] space-y-3">
-        <Loader2 className="size-8 text-primary animate-spin" />
-        <p className="text-xs text-muted-foreground font-mono">
-          Verifying record integrity hash chain...
-        </p>
-      </div>
-    );
-  }
-
-  const ben = beneficiary || {
-    id: user?.id || "BEN-USER",
-    rationCardId: `RC-${user?.id?.slice(-6).toUpperCase() || "DEL-101"}`,
-    fullName: user?.name || "Authenticated Citizen",
-    currentHash: `0x${user?.id ? user.id.slice(-12) : "3a91b2c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0"}`,
-    latestIPFSCid: `Qm${user?.id ? user.id.slice(-16) : "XoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco"}`,
-    verificationStatus: "VERIFIED" as const,
-  };
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-6 py-4">
-      <div className="text-center space-y-2">
-        <div className="inline-flex p-4 bg-secondary border border-border rounded-full text-primary shadow-subtle">
-          <ShieldCheck className="size-12" />
-        </div>
-        <h1 className="ben-title text-foreground">
-          Citizen Record Integrity Status
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Public distribution entitlement record protection & verification
-        </p>
-      </div>
-
-      <div className="bg-card border border-border rounded-md p-6 shadow-subtle space-y-6">
-        <div className="flex items-center justify-between border-b border-border pb-4">
-          <span className="text-xs font-mono font-bold text-muted-foreground">
-            RATION CARD RECORD:{" "}
-            <span className="text-foreground">{ben.rationCardId}</span>
-          </span>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary text-primary rounded-full border border-border font-bold text-xs">
-            <CheckCircle2 className="size-4" />
-            <span>✓ VERIFIED</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div className="bg-muted/40 p-4 rounded-md border border-border">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase block">
-              Last Verified
-            </span>
-            <span className="text-xs font-bold text-foreground mt-1 block">
-              {new Date().toLocaleDateString()}
-            </span>
-          </div>
-
-          <div className="bg-muted/40 p-4 rounded-md border border-border">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase block">
-              Record Version
-            </span>
-            <span className="text-xs font-bold text-primary mt-1 block font-mono">
-              Version 3.0 (Immutable)
-            </span>
-          </div>
-
-          <div className="bg-muted/40 p-4 rounded-md border border-border">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase block">
-              Status
-            </span>
-            <span className="text-xs font-bold text-foreground mt-1 block">
-              Tamper Free
-            </span>
-          </div>
-        </div>
-
-        <div className="pt-2">
-          <button
-            onClick={() => setShowTechnical(!showTechnical)}
-            className="w-full py-2.5 bg-secondary hover:bg-secondary-hover text-foreground text-xs font-semibold rounded-md border border-border flex items-center justify-center gap-2 transition-colors"
-          >
-            <span>
-              {showTechnical
-                ? "Hide Advanced Cryptographic Details"
-                : "Expand Advanced Cryptographic Proof"}
-            </span>
-            {showTechnical ? (
-              <ChevronUp className="size-4" />
-            ) : (
-              <ChevronDown className="size-4" />
-            )}
-          </button>
-        </div>
-
-        {showTechnical && (
-          <div className="pt-2 animate-in fade-in duration-200 space-y-4">
-            <HashComparison
-              expectedHash={ben.currentHash}
-              currentDatabaseHash={ben.currentHash}
-              ipfsCid={ben.latestIPFSCid}
-              status="VERIFIED"
-              lastVerifiedAt={new Date().toISOString()}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const response = await apiClient.get("/beneficiary/integrity");
+      setVerification(response.data?.verification || null);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not load integrity evidence."); setVerification(null); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  if (loading) return <div className="flex min-h-[300px] flex-col items-center justify-center gap-3"><Loader2 className="size-8 animate-spin text-primary" /><p className="text-sm text-muted-foreground">Loading saved integrity evidence…</p></div>;
+  if (error || !verification) return <section className="mx-auto max-w-2xl border border-border bg-white p-10 text-center"><AlertCircle className="mx-auto mb-3 size-7 text-destructive" /><h1 className="ben-title text-foreground">Integrity data unavailable</h1><p className="mt-2 text-sm text-muted-foreground">{error || "No integrity response was returned."}</p><button onClick={() => void load()} className="mt-4 bg-primary px-4 py-2 text-sm font-semibold text-white">Retry</button></section>;
+  return <div className="mx-auto max-w-3xl space-y-6 py-4">
+    <header className="space-y-2 text-center"><div className="inline-flex rounded-full border border-border bg-secondary p-4 text-primary"><ShieldAlert className="size-8" /></div><h1 className="ben-title text-foreground">Citizen Record Integrity Status</h1><p className="text-xs text-muted-foreground">Current profile digest and persisted document provenance</p></header>
+    <section className="space-y-5 border border-border bg-card p-6 shadow-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4"><span className="font-mono text-xs font-bold text-muted-foreground">Ration card: <span className="text-foreground">Digest is calculated from the current account record</span></span><span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-900">{verification.status}</span></div>
+      <div className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><strong>Integrity is not verified.</strong> {verification.explanation}</div>
+      <div><button onClick={() => setShowTechnical((value) => !value)} className="flex w-full items-center justify-center gap-2 border border-border bg-secondary px-3 py-2.5 text-xs font-semibold text-foreground">{showTechnical ? "Hide technical details" : "Show technical details"}{showTechnical ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}</button></div>
+      {showTechnical && <div className="space-y-2"><p className="text-xs font-semibold text-muted-foreground">Current record SHA-256 digest (a live calculation, not an anchored comparison)</p><code className="block break-all border border-border bg-muted/40 p-3 text-xs text-foreground">{verification.currentRecordHash}</code><p className="text-xs text-muted-foreground">Last trusted comparison: {verification.lastVerifiedAt ? new Date(verification.lastVerifiedAt).toLocaleString() : "None recorded"}</p></div>}
+      <div className="space-y-3 border-t border-border pt-4"><h2 className="flex items-center gap-2 text-sm font-bold text-foreground"><FileText className="size-4 text-primary" />Recorded supporting documents ({verification.documents.length})</h2>{verification.documents.length === 0 ? <p className="text-sm text-muted-foreground">No document audit records are linked to this account.</p> : verification.documents.map((doc) => <article key={doc.documentId} className="space-y-2 border border-border bg-background p-3"><p className="font-mono text-xs font-semibold text-foreground">{doc.documentId} <span className="ml-2 text-muted-foreground">{doc.status || "Recorded"}</span></p><p className="break-all text-xs text-muted-foreground">IPFS CID: {doc.ipfsCid || "Not recorded"}</p><p className="break-all text-xs text-muted-foreground">File digest: {doc.fileHash || "Not recorded"}</p><p className="text-[11px] text-muted-foreground">Recorded: {doc.recordedAt ? new Date(doc.recordedAt).toLocaleString() : "Date unavailable"}</p></article>)}</div>
+    </section>
+  </div>;
 }
