@@ -41,13 +41,17 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     phone = Column(String(50), nullable=True)
     jurisdiction = Column(String(255), nullable=True)
+    assigned_pds_officer_id = Column(String(64), nullable=True)
     wallet_address = Column(String(100), unique=True, index=True, nullable=True)
     status = Column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
     permissions = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=_utc_now)
     updated_at = Column(DateTime, default=_utc_now, onupdate=_utc_now)
 
-    __table_args__ = (Index("idx_user_email_role", "email", "role"),)
+    __table_args__ = (
+        Index("idx_user_email_role", "email", "role"),
+        Index("idx_users_assigned_pds_officer_id", "assigned_pds_officer_id"),
+    )
 
 
 class AuthNonce(Base):

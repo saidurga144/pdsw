@@ -31,6 +31,7 @@ function mapBackendUser(u: Record<string, unknown>) {
     role: normalizeRole(String(u.role || "")),
     phone: (u.phone || "") as string,
     jurisdiction: (u.jurisdiction || "") as string,
+    assignedPdsOfficerId: (u.assigned_pds_officer_id || null) as string | null,
     status: rawStatus === "DEACTIVATED" ? "INACTIVE" : rawStatus,
     lastLoginAt: (u.last_login_at || null) as string | null,
   };
@@ -189,6 +190,46 @@ export class ServerAdminService {
       fullName: userData.fullName,
       status: created.status,
     };
+  }
+
+  /** Assigns or unassigns a beneficiary from a PDS officer account. */
+  static async assignBeneficiaryOfficer(
+    userId: string,
+    officerId: string | null,
+    token?: string,
+  ) {
+    if (!token) {
+      throw new ProvisionError("Admin session token missing.", 401);
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(
+        `${FASTAPI_URL}/api/auth/admin/users/${encodeURIComponent(userId)}/assignment`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ assigned_pds_officer_id: officerId }),
+        },
+      );
+    } catch {
+      throw new ProvisionError(
+        "Unable to reach the authentication backend. Ensure the FastAPI server is running.",
+        503,
+      );
+    }
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new ProvisionError(
+        data.detail || data.error || `Assignment update failed (HTTP ${res.status}).`,
+        res.status,
+      );
+    }
+    return data.beneficiary ? mapBackendUser(data.beneficiary) : null;
   }
 
   /**

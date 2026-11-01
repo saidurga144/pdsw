@@ -35,6 +35,7 @@ from backend.auth.user_store import (
 )
 from backend.config import is_strong_secret, settings
 from backend.database import get_db
+from backend.logger.audit import log_action
 from backend.models import AuthNonce, User
 from backend.rbac.dependencies import get_current_user_from_mongo, require_roles
 from backend.rbac.roles import (
@@ -44,6 +45,7 @@ from backend.rbac.roles import (
 )
 from backend.schemas import (
     AdminProvisionUser,
+    BeneficiaryOfficerAssignmentUpdate,
     ForgotPasswordRequest,
     LoginStepOneResponse,
     NonceResponse,
@@ -61,6 +63,17 @@ logger = logging.getLogger("pdsw.auth")
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+
+def _require_assigned_beneficiary(current_officer: dict, beneficiary: dict) -> None:
+    officer_id = str(current_officer.get("_id") or current_officer.get("id") or "")
+    assigned_officer_id = str(beneficiary.get("assigned_pds_officer_id") or "")
+    if not officer_id or assigned_officer_id != officer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This beneficiary is not assigned to your officer account.",
+        )
+
+
 _NONCE_TTL_MINUTES = 15
 
 
@@ -73,6 +86,7 @@ def _doc_to_user_out(doc: dict) -> UserOut:
         full_name=doc.get("full_name", ""),
         phone=doc.get("phone"),
         jurisdiction=doc.get("jurisdiction"),
+        assigned_pds_officer_id=doc.get("assigned_pds_officer_id"),
         wallet_address=doc.get("wallet_address"),
         status=doc.get("status", "ACTIVE"),
     )
@@ -391,6 +405,11 @@ async def officer_create_beneficiary(
         "phone": payload.phone,
         "jurisdiction": payload.jurisdiction
         or current_officer.get("jurisdiction", "National Jurisdiction"),
+        "assigned_pds_officer_id": (
+            str(current_officer.get("_id") or current_officer.get("id") or "")
+            if canonicalize_role(current_officer.get("role", "")) == "PDS_OFFICER"
+            else None
+        ),
         "wallet_address": clean_wallet,
         "status": "ACTIVE",
         "created_at": created_at_utc,
@@ -940,6 +959,7 @@ async def list_all_users(db: AsyncSession = Depends(get_db)):
                 "full_name": u.full_name,
                 "phone": u.phone,
                 "jurisdiction": u.jurisdiction,
+                "assigned_pds_officer_id": u.assigned_pds_officer_id,
                 "wallet_address": u.wallet_address,
                 "status": u.status,
             }
@@ -947,6 +967,78 @@ async def list_all_users(db: AsyncSession = Depends(get_db)):
         for u in sqlite_users
     ]
     return {"success": True, "users": users_out}
+
+
+@router.patch(
+    "/admin/users/{user_id}/assignment",
+    dependencies=[Depends(require_roles(["ADMIN"]))],
+)
+async def admin_assign_beneficiary_officer(
+    user_id: str,
+    payload: BeneficiaryOfficerAssignmentUpdate,
+    current_admin: dict = Depends(get_current_user_from_mongo),
+    db: AsyncSession = Depends(get_db),
+):
+    beneficiary = await find_user_by_id(db, user_id)
+    if not beneficiary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Beneficiary account not found.",
+        )
+    if canonicalize_role(beneficiary.get("role", "")) != "BENEFICIARY":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Officer assignment can only be changed for beneficiary accounts.",
+        )
+
+    new_officer_id = payload.assigned_pds_officer_id
+    previous_officer_id = beneficiary.get("assigned_pds_officer_id")
+    if previous_officer_id == new_officer_id:
+        return {
+            "success": True,
+            "beneficiary": _doc_to_user_out(beneficiary).model_dump(),
+            "message": "The beneficiary is already assigned to that officer.",
+        }
+
+    if new_officer_id:
+        officer = await find_user_by_id(db, new_officer_id)
+        if not officer or canonicalize_role(officer.get("role", "")) != "PDS_OFFICER":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Select an existing PDS Officer account.",
+            )
+        if str(officer.get("status", "ACTIVE")).upper() != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An inactive PDS Officer cannot receive beneficiary assignments.",
+            )
+
+    await update_user(
+        db,
+        user_id,
+        {"assigned_pds_officer_id": new_officer_id},
+    )
+    updated_beneficiary = await find_user_by_id(db, user_id)
+    if not updated_beneficiary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Beneficiary account no longer exists.",
+        )
+    log_action(
+        str(current_admin.get("_id") or current_admin.get("id") or ""),
+        "ADMIN",
+        "BENEFICIARY_OFFICER_REASSIGNED",
+        {
+            "beneficiary_id": user_id,
+            "previous_pds_officer_id": previous_officer_id,
+            "assigned_pds_officer_id": new_officer_id,
+        },
+    )
+    return {
+        "success": True,
+        "beneficiary": _doc_to_user_out(updated_beneficiary).model_dump(),
+        "message": "Beneficiary officer assignment updated successfully.",
+    }
 
 
 @router.get("/stats", dependencies=[Depends(require_roles(["ADMIN"]))])
@@ -1006,8 +1098,15 @@ async def platform_stats(db: AsyncSession = Depends(get_db)):
     dependencies=[Depends(require_roles(["PDS_OFFICER"]))],
 )
 async def officer_list_beneficiaries(
+    current_officer: dict = Depends(get_current_user_from_mongo),
     db: AsyncSession = Depends(get_db),
 ):
+    officer_id = str(current_officer.get("_id") or current_officer.get("id") or "")
+    if not officer_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Officer identity is missing.",
+        )
     users_col = None
     try:
         from backend.database.mongodb import get_users_collection
@@ -1018,7 +1117,15 @@ async def officer_list_beneficiaries(
 
     if users_col is not None:
         try:
-            docs = list(users_col.find({"role": "BENEFICIARY"}, {"password_hash": 0}))
+            docs = list(
+                users_col.find(
+                    {
+                        "role": "BENEFICIARY",
+                        "assigned_pds_officer_id": officer_id,
+                    },
+                    {"password_hash": 0},
+                )
+            )
             return {
                 "success": True,
                 "beneficiaries": [_doc_to_user_out(doc).model_dump() for doc in docs],
@@ -1028,7 +1135,12 @@ async def officer_list_beneficiaries(
                 "MongoDB beneficiary list failed; falling back to SQLite: %s", exc
             )
 
-    result = await db.execute(select(User).where(User.role == "BENEFICIARY"))
+    result = await db.execute(
+        select(User).where(
+            User.role == "BENEFICIARY",
+            User.assigned_pds_officer_id == officer_id,
+        )
+    )
     beneficiaries = [
         _doc_to_user_out(
             {
@@ -1038,6 +1150,7 @@ async def officer_list_beneficiaries(
                 "full_name": user.full_name,
                 "phone": user.phone,
                 "jurisdiction": user.jurisdiction,
+                "assigned_pds_officer_id": user.assigned_pds_officer_id,
                 "wallet_address": user.wallet_address,
                 "status": user.status,
                 "created_at": (
@@ -1077,6 +1190,7 @@ async def officer_update_beneficiary(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"PDS Officer can only edit BENEFICIARY accounts. Target role is [{target_role}].",
         )
+    _require_assigned_beneficiary(current_officer, target_user)
 
     updates: dict = {}
     if payload.full_name is not None and payload.full_name.strip():
@@ -1130,6 +1244,7 @@ async def officer_deactivate_beneficiary(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"PDS Officer can only deactivate BENEFICIARY accounts. Target role is [{target_role}].",
         )
+    _require_assigned_beneficiary(current_officer, target_user)
 
     current_status = str(target_user.get("status") or "ACTIVE").upper()
     if current_status in {"INACTIVE", "DEACTIVATED"}:
@@ -1194,6 +1309,7 @@ async def officer_activate_beneficiary(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"PDS Officer can only activate BENEFICIARY accounts. Target role is [{target_role}].",
         )
+    _require_assigned_beneficiary(current_officer, target_user)
 
     current_status = str(target_user.get("status") or "ACTIVE").upper()
     if current_status == "ACTIVE":
@@ -1246,6 +1362,7 @@ async def officer_reset_beneficiary_password(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"PDS Officer can only reset passwords for BENEFICIARY accounts. Target role is [{target_role}].",
         )
+    _require_assigned_beneficiary(current_officer, target_user)
 
     target_id = target_user.get("_id") or target_user.get("id")
     reset_token = await create_password_reset_token(db, target_id, target_user["email"])

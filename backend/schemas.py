@@ -41,6 +41,7 @@ class UserOut(BaseModel):
     full_name: str
     phone: Optional[str] = None
     jurisdiction: Optional[str] = None
+    assigned_pds_officer_id: Optional[str] = None
     wallet_address: Optional[str] = None
     status: str
 
@@ -108,6 +109,18 @@ class UpdateBeneficiary(BaseModel):
         if len(clean) not in (0, 10):
             raise ValueError("Mobile phone number must be exactly 10 digits.")
         return clean or None
+
+
+class BeneficiaryOfficerAssignmentUpdate(BaseModel):
+    assigned_pds_officer_id: Optional[str] = Field(..., max_length=64)
+
+    @field_validator("assigned_pds_officer_id", mode="before")
+    @classmethod
+    def normalize_officer_id(cls, value):
+        if value is None:
+            return None
+        cleaned = str(value).strip()
+        return cleaned or None
 
 
 class NonceResponse(BaseModel):

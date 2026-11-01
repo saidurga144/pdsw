@@ -15,6 +15,7 @@ from backend.auth.user_store import insert_user, find_user_by_id, DuplicateUserE
 from backend.auth import user_store
 from backend.auth.rate_limiter import limiter
 from backend.config import is_strong_secret
+from backend.models import ChangeRequestRecord
 from backend.rbac.roles import canonicalize_role
 
 TEST_USER_EMAIL = "test.ephemeral@pds.gov.in"
@@ -462,6 +463,7 @@ async def test_officer_can_only_toggle_beneficiary_accounts():
                 "full_name": "Status Test Beneficiary",
                 "phone": None,
                 "jurisdiction": "Delhi",
+                "assigned_pds_officer_id": officer_id,
                 "wallet_address": None,
                 "status": "ACTIVE",
             },
@@ -533,6 +535,182 @@ async def test_officer_can_only_toggle_beneficiary_accounts():
             f"/api/auth/officer/beneficiaries/{admin_id}/deactivate", headers=headers
         )
         assert protected_target.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_officer_assignment_isolation_for_accounts_and_requests():
+    """Officers only see and review beneficiaries currently assigned to them."""
+    from backend.auth.security import create_access_token
+
+    suffix = uuid.uuid4().hex[:10]
+    officer_a_id = f"usr-officer-a-{suffix}"
+    officer_b_id = f"usr-officer-b-{suffix}"
+    beneficiary_a_id = f"usr-beneficiary-a-{suffix}"
+    beneficiary_b_id = f"usr-beneficiary-b-{suffix}"
+    legacy_beneficiary_id = f"usr-beneficiary-unassigned-{suffix}"
+    admin_id = f"usr-admin-assign-{suffix}"
+    password_hash = get_password_hash("AssignmentTest2026!")
+
+    async with database.AsyncSessionLocal() as db:
+        users = (
+            (officer_a_id, "PDS_OFFICER", "Officer A", None),
+            (officer_b_id, "PDS_OFFICER", "Officer B", None),
+            (beneficiary_a_id, "BENEFICIARY", "Beneficiary A", officer_a_id),
+            (beneficiary_b_id, "BENEFICIARY", "Beneficiary B", officer_b_id),
+            (legacy_beneficiary_id, "BENEFICIARY", "Legacy Beneficiary", None),
+            (admin_id, "ADMIN", "Assignment Admin", None),
+        )
+        for user_id, role, name, assigned_officer_id in users:
+            await insert_user(
+                db,
+                {
+                    "_id": user_id,
+                    "email": f"{user_id}@pds.gov.in",
+                    "password_hash": password_hash,
+                    "role": role,
+                    "full_name": name,
+                    "phone": None,
+                    "jurisdiction": "Delhi",
+                    "assigned_pds_officer_id": assigned_officer_id,
+                    "wallet_address": None,
+                    "status": "ACTIVE",
+                },
+            )
+
+        for request_id, beneficiary_id, name in (
+            (f"CR-{suffix}-A", beneficiary_a_id, "Beneficiary A"),
+            (f"CR-{suffix}-B", beneficiary_b_id, "Beneficiary B"),
+        ):
+            db.add(
+                ChangeRequestRecord(
+                    id=request_id,
+                    beneficiary_id=beneficiary_id,
+                    beneficiary_name=name,
+                    beneficiary_email=f"{beneficiary_id}@pds.gov.in",
+                    ration_card_id="",
+                    jurisdiction="Delhi",
+                    request_type="CONTACT_UPDATE",
+                    previous_data={},
+                    requested_data={"phone": "9999999999"},
+                    reason="Update phone number",
+                    supporting_documents=[],
+                    status="SUBMITTED",
+                    submitted_at=datetime.datetime.now(datetime.timezone.utc).replace(
+                        tzinfo=None
+                    ),
+                    review_notes="",
+                )
+            )
+        await db.commit()
+
+    def token_for(user_id: str, role: str) -> str:
+        return create_access_token(
+            {
+                "sub": user_id,
+                "userId": user_id,
+                "email": f"{user_id}@pds.gov.in",
+                "role": role,
+            }
+        )
+
+    officer_a_headers = {
+        "Authorization": f"Bearer {token_for(officer_a_id, 'PDS_OFFICER')}"
+    }
+    admin_headers = {"Authorization": f"Bearer {token_for(admin_id, 'ADMIN')}"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        list_a = await client.get(
+            "/api/auth/officer/beneficiaries", headers=officer_a_headers
+        )
+        assert list_a.status_code == 200, list_a.text
+        assert [item["id"] for item in list_a.json()["beneficiaries"]] == [
+            beneficiary_a_id
+        ]
+
+        assigned_legacy = await client.patch(
+            f"/api/auth/admin/users/{legacy_beneficiary_id}/assignment",
+            headers=admin_headers,
+            json={"assigned_pds_officer_id": officer_a_id},
+        )
+        assert assigned_legacy.status_code == 200, assigned_legacy.text
+        assert (
+            assigned_legacy.json()["beneficiary"]["assigned_pds_officer_id"]
+            == officer_a_id
+        )
+        list_a_with_legacy = await client.get(
+            "/api/auth/officer/beneficiaries", headers=officer_a_headers
+        )
+        assert legacy_beneficiary_id in {
+            item["id"] for item in list_a_with_legacy.json()["beneficiaries"]
+        }
+
+        unassigned_legacy = await client.patch(
+            f"/api/auth/admin/users/{legacy_beneficiary_id}/assignment",
+            headers=admin_headers,
+            json={"assigned_pds_officer_id": None},
+        )
+        assert unassigned_legacy.status_code == 200, unassigned_legacy.text
+        list_a_without_legacy = await client.get(
+            "/api/auth/officer/beneficiaries", headers=officer_a_headers
+        )
+        assert legacy_beneficiary_id not in {
+            item["id"] for item in list_a_without_legacy.json()["beneficiaries"]
+        }
+
+        requests_a = await client.get(
+            "/api/requests/officer", headers=officer_a_headers
+        )
+        assert requests_a.status_code == 200, requests_a.text
+        assert {item["id"] for item in requests_a.json()["requests"]} == {
+            f"CR-{suffix}-A"
+        }
+
+        denied_detail = await client.get(
+            f"/api/requests/CR-{suffix}-B", headers=officer_a_headers
+        )
+        assert denied_detail.status_code == 403, denied_detail.text
+
+        denied_review = await client.patch(
+            f"/api/requests/CR-{suffix}-B/review",
+            headers=officer_a_headers,
+            json={"status": "APPROVED", "review_notes": "Reviewed"},
+        )
+        assert denied_review.status_code == 403, denied_review.text
+
+        reviewed_own = await client.patch(
+            f"/api/requests/CR-{suffix}-A/review",
+            headers=officer_a_headers,
+            json={"status": "UNDER_REVIEW", "review_notes": "Reviewed"},
+        )
+        assert reviewed_own.status_code == 200, reviewed_own.text
+
+        reassigned = await client.patch(
+            f"/api/auth/admin/users/{beneficiary_a_id}/assignment",
+            headers=admin_headers,
+            json={"assigned_pds_officer_id": officer_b_id},
+        )
+        assert reassigned.status_code == 200, reassigned.text
+
+        list_a_after = await client.get(
+            "/api/auth/officer/beneficiaries", headers=officer_a_headers
+        )
+        assert list_a_after.status_code == 200
+        assert beneficiary_a_id not in {
+            item["id"] for item in list_a_after.json()["beneficiaries"]
+        }
+
+        officer_b_headers = {
+            "Authorization": f"Bearer {token_for(officer_b_id, 'PDS_OFFICER')}"
+        }
+        list_b_after = await client.get(
+            "/api/auth/officer/beneficiaries", headers=officer_b_headers
+        )
+        assert list_b_after.status_code == 200
+        assert beneficiary_a_id in {
+            item["id"] for item in list_b_after.json()["beneficiaries"]
+        }
 
 
 @pytest.mark.asyncio
@@ -634,6 +812,7 @@ async def test_officer_list_shows_the_same_persisted_beneficiary_as_admin():
         assert officer_user["id"] == admin_user["id"] == created_user["id"]
         assert officer_user["email"] == admin_user["email"] == beneficiary_email
         assert officer_user["role"] == admin_user["role"] == "BENEFICIARY"
+        assert officer_user["assigned_pds_officer_id"] == officer_id
         assert officer_user["status"] == admin_user["status"] == "ACTIVE"
 
 

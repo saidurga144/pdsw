@@ -51,6 +51,7 @@ def _sqlite_user_to_doc(user: Optional[User]) -> Optional[dict[str, Any]]:
         "full_name": user.full_name,
         "phone": user.phone,
         "jurisdiction": user.jurisdiction,
+        "assigned_pds_officer_id": user.assigned_pds_officer_id,
         "wallet_address": user.wallet_address,
         "status": status,
         "created_at": user.created_at.isoformat() + "Z" if user.created_at else None,
@@ -84,6 +85,37 @@ async def find_user_by_id(db: AsyncSession, user_id: str) -> Optional[dict[str, 
 
     result = await db.execute(select(User).where(User.id == user_id))
     return _sqlite_user_to_doc(result.scalars().first())
+
+
+async def find_beneficiary_ids_assigned_to_officer(
+    db: AsyncSession, officer_id: str
+) -> list[str]:
+    """Return beneficiary IDs owned by the authenticated officer."""
+    users_col = _mongo_collection_or_none()
+    if users_col is not None:
+        try:
+            return [
+                str(doc["_id"])
+                for doc in users_col.find(
+                    {
+                        "role": "BENEFICIARY",
+                        "assigned_pds_officer_id": officer_id,
+                    },
+                    {"_id": 1},
+                )
+            ]
+        except PyMongoError as exc:
+            logger.warning(
+                "MongoDB assigned-beneficiary lookup failed; using SQLite: %s", exc
+            )
+
+    result = await db.execute(
+        select(User.id).where(
+            User.role == "BENEFICIARY",
+            User.assigned_pds_officer_id == officer_id,
+        )
+    )
+    return [str(user_id) for user_id in result.scalars().all()]
 
 
 async def find_user_by_wallet(
@@ -139,6 +171,7 @@ async def insert_user(db: AsyncSession, user_doc: dict[str, Any]) -> None:
         full_name=user_doc.get("full_name", ""),
         phone=user_doc.get("phone"),
         jurisdiction=user_doc.get("jurisdiction"),
+        assigned_pds_officer_id=user_doc.get("assigned_pds_officer_id"),
         wallet_address=user_doc.get("wallet_address"),
         status=user_doc.get("status", "ACTIVE"),
         created_at=_utc_now(),
@@ -178,6 +211,7 @@ async def update_user(db: AsyncSession, user_id: str, updates: dict[str, Any]) -
             "full_name",
             "phone",
             "jurisdiction",
+            "assigned_pds_officer_id",
             "wallet_address",
             "status",
         }:

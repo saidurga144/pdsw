@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Users,
   UserPlus,
+  UserCog,
   Search,
   Shield,
   X,
@@ -48,6 +49,7 @@ interface UserRecord {
   phone?: string;
   jurisdiction?: string;
   assignedDistrict?: string;
+  assignedPdsOfficerId?: string | null;
   status: string;
 }
 
@@ -83,6 +85,10 @@ export default function UserDirectoryPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [assignmentTarget, setAssignmentTarget] = useState<UserRecord | null>(null);
+  const [selectedOfficerId, setSelectedOfficerId] = useState("");
+  const [assignmentError, setAssignmentError] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -287,6 +293,44 @@ export default function UserDirectoryPage() {
     }
   };
 
+  const handleAssignOfficer = async () => {
+    if (!assignmentTarget) return;
+    setIsAssigning(true);
+    setAssignmentError("");
+    try {
+      const res = await fetch(
+        `/api/admin/users/${encodeURIComponent(assignmentTarget.id)}/assignment`,
+        {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            assigned_pds_officer_id: selectedOfficerId || null,
+          }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Could not update officer assignment.");
+      }
+      const selectedOfficer = users.find((user) => user.id === selectedOfficerId);
+      setAssignmentTarget(null);
+      setActionNotice({
+        type: "success",
+        message: selectedOfficerId
+          ? `${assignmentTarget.name} assigned to ${selectedOfficer?.name || "the selected PDS Officer"}.`
+          : `${assignmentTarget.name} is now unassigned.`,
+      });
+      setTimeout(() => setActionNotice(null), 4000);
+      await fetchUsers();
+    } catch (err: any) {
+      setAssignmentError(
+        err?.message || "Network error while updating officer assignment.",
+      );
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const copyToClipboard = async (text: string) => {
     try {
       const fullUrl = new URL(text, window.location.origin).toString();
@@ -432,6 +476,7 @@ export default function UserDirectoryPage() {
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Assigned District</th>
+              <th className="px-4 py-3">Assigned PDS Officer</th>
               <th className="px-4 py-3 min-w-[110px] whitespace-nowrap text-center">
                 Status
               </th>
@@ -444,7 +489,7 @@ export default function UserDirectoryPage() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-10 text-center text-slate-400"
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -456,7 +501,7 @@ export default function UserDirectoryPage() {
             ) : filteredUsers.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-12 text-center text-slate-400"
                 >
                   <div className="max-w-sm mx-auto flex flex-col items-center justify-center space-y-3">
@@ -502,6 +547,10 @@ export default function UserDirectoryPage() {
                     <td className="px-4 py-3 text-slate-300">
                       {u.jurisdiction || u.assignedDistrict || "National"}
                     </td>
+                    <td className="px-4 py-3 text-slate-300">
+                      {users.find((officer) => officer.id === u.assignedPdsOfficerId)?.name ||
+                        (u.assignedPdsOfficerId ? "Assigned officer unavailable" : "Unassigned")}
+                    </td>
                     <td className="px-4 py-3 min-w-[110px] whitespace-nowrap text-center align-middle">
                       <span
                         className={`inline-flex min-w-[82px] items-center justify-center whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-bold ${
@@ -515,6 +564,20 @@ export default function UserDirectoryPage() {
                     </td>
                     <td className="px-4 py-3 min-w-[118px] whitespace-nowrap text-right align-middle">
                       <div className="flex items-center justify-end gap-1.5">
+                        {u.role === "BENEFICIARY" && (
+                          <button
+                            onClick={() => {
+                              setAssignmentTarget(u);
+                              setSelectedOfficerId(u.assignedPdsOfficerId || "");
+                              setAssignmentError("");
+                            }}
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded transition-colors border border-slate-700"
+                            title="Assign PDS Officer"
+                            aria-label={`Assign PDS Officer to ${u.name}`}
+                          >
+                            <UserCog className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleInitiatePasswordReset(u)}
                           disabled={Boolean(isResetting)}
@@ -564,6 +627,100 @@ export default function UserDirectoryPage() {
           </tbody>
         </table>
       </div>
+
+      {assignmentTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="beneficiary-officer-assignment-title"
+            className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+              <h2
+                id="beneficiary-officer-assignment-title"
+                className="flex items-center gap-2 text-sm font-bold text-slate-100"
+              >
+                <UserCog className="h-4 w-4 text-cyan-400" />
+                Assign PDS Officer
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAssignmentTarget(null)}
+                disabled={isAssigning}
+                className="text-slate-400 transition-colors hover:text-slate-200 disabled:opacity-50"
+                aria-label="Close assignment dialog"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-4 p-6 text-xs">
+              <div>
+                <p className="text-slate-400">Beneficiary</p>
+                <p className="mt-1 font-semibold text-slate-100">
+                  {assignmentTarget.name}
+                </p>
+                <p className="text-slate-500">{assignmentTarget.email}</p>
+              </div>
+              <label
+                htmlFor="assigned-pds-officer"
+                className="block font-semibold text-slate-300"
+              >
+                PDS Officer
+              </label>
+              <select
+                id="assigned-pds-officer"
+                value={selectedOfficerId}
+                onChange={(event) => setSelectedOfficerId(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-slate-100 outline-none focus:border-cyan-500"
+              >
+                <option value="">Unassigned</option>
+                {users
+                  .filter(
+                    (user) =>
+                      user.role === "PDS_OFFICER" &&
+                      (!isInactiveStatus(user.status) ||
+                        user.id === assignmentTarget.assignedPdsOfficerId),
+                  )
+                  .map((officer) => (
+                    <option
+                      key={officer.id}
+                      value={officer.id}
+                      disabled={isInactiveStatus(officer.status)}
+                    >
+                      {officer.name} — {officer.email}
+                      {isInactiveStatus(officer.status) ? " (Inactive)" : ""}
+                    </option>
+                  ))}
+              </select>
+              {assignmentError && (
+                <p role="alert" className="text-rose-300">
+                  {assignmentError}
+                </p>
+              )}
+              <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setAssignmentTarget(null)}
+                  disabled={isAssigning}
+                  className="rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAssignOfficer}
+                  disabled={isAssigning}
+                  className="flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 font-bold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
+                >
+                  {isAssigning && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                  {isAssigning ? "Saving..." : "Save Assignment"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE USER ACCOUNT MODAL */}
       {showModal && (

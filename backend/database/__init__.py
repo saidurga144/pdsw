@@ -4,6 +4,7 @@ import logging
 import re
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import inspect
 from sqlalchemy.orm import declarative_base
 
 from backend.config import settings
@@ -43,9 +44,27 @@ active_db_type = "SQLite"
 async def init_db():
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        await connection.run_sync(_ensure_beneficiary_assignment_schema)
     logger.info(
         "Database schema initialized successfully on %s.",
         _sanitize_db_url(settings.DATABASE_URL),
+    )
+
+
+def _ensure_beneficiary_assignment_schema(connection):
+    """Add the officer mapping to pre-existing user tables without data loss."""
+    inspector = inspect(connection)
+    if "users" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "assigned_pds_officer_id" not in columns:
+        connection.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN assigned_pds_officer_id VARCHAR(64)"
+        )
+    connection.exec_driver_sql(
+        "CREATE INDEX IF NOT EXISTS idx_users_assigned_pds_officer_id "
+        "ON users (assigned_pds_officer_id)"
     )
 
 

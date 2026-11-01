@@ -16,7 +16,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.database.mongodb import get_mongo_db
 from backend.models import ChangeRequestRecord
+from backend.auth.user_store import (
+    find_beneficiary_ids_assigned_to_officer,
+    find_user_by_id,
+)
+from backend.logger.audit import log_action
 from backend.rbac.dependencies import require_roles
+from backend.rbac.roles import canonicalize_role
 
 logger = logging.getLogger("pdsw.requests")
 router = APIRouter(prefix="/requests", tags=["Beneficiary Change Requests"])
@@ -368,27 +374,93 @@ async def list_my_change_requests(
 
 @router.get("/officer")
 async def list_officer_change_requests(
-    _current_user: dict = Depends(
+    current_user: dict = Depends(
         require_roles(["PDS_OFFICER", "ADMIN", "SOC_ANALYST"])
     ),
     db: AsyncSession = Depends(get_db),
 ):
+    status_filter = ["SUBMITTED", "UNDER_REVIEW", "OFFICER_VERIFICATION"]
+    query = select(ChangeRequestRecord).where(
+        ChangeRequestRecord.status.in_(status_filter)
+    )
+    mongo_query: dict[str, Any] = {"status": {"$in": status_filter}}
+
+    if canonicalize_role(current_user.get("role", "")) == "PDS_OFFICER":
+        officer_id = str(current_user.get("_id") or current_user.get("id") or "")
+        if not officer_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Officer identity is missing.",
+            )
+        beneficiary_ids = await find_beneficiary_ids_assigned_to_officer(
+            db, officer_id
+        )
+        query = query.where(ChangeRequestRecord.beneficiary_id.in_(beneficiary_ids))
+        mongo_query["beneficiary_id"] = {"$in": beneficiary_ids}
+
     return {
         "success": True,
         "requests": await _find_requests(
             db,
-            select(ChangeRequestRecord).where(
-                ChangeRequestRecord.status.in_(
-                    ["SUBMITTED", "UNDER_REVIEW", "OFFICER_VERIFICATION"]
-                )
-            ),
-            {
-                "status": {
-                    "$in": ["SUBMITTED", "UNDER_REVIEW", "OFFICER_VERIFICATION"]
-                }
-            },
+            query,
+            mongo_query,
         ),
     }
+
+
+@router.get("/officer/ipfs-documents")
+async def list_officer_ipfs_documents(
+    current_user: dict = Depends(
+        require_roles(["PDS_OFFICER", "ADMIN", "SOC_ANALYST"])
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(ChangeRequestRecord).where(
+        ChangeRequestRecord.supporting_documents.is_not(None)
+    )
+    mongo_query: dict[str, Any] = {"supporting_documents.0": {"$exists": True}}
+    if canonicalize_role(current_user.get("role", "")) == "PDS_OFFICER":
+        officer_id = str(current_user.get("_id") or current_user.get("id") or "")
+        if not officer_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Officer identity is missing.",
+            )
+        beneficiary_ids = await find_beneficiary_ids_assigned_to_officer(
+            db, officer_id
+        )
+        query = query.where(ChangeRequestRecord.beneficiary_id.in_(beneficiary_ids))
+        mongo_query["beneficiary_id"] = {"$in": beneficiary_ids}
+
+    requests = await _find_requests(db, query, mongo_query)
+    documents = []
+    for request in requests:
+        for document in request.get("supporting_documents", []):
+            if document.get("ipfs_cid"):
+                documents.append(
+                    {
+                        **document,
+                        "request_id": request.get("id"),
+                        "beneficiary_id": request.get("beneficiary_id"),
+                    }
+                )
+    return {"success": True, "documents": documents}
+
+
+async def _ensure_officer_owns_request(
+    request_record: dict[str, Any], current_user: dict, db: AsyncSession
+) -> None:
+    if canonicalize_role(current_user.get("role", "")) != "PDS_OFFICER":
+        return
+    officer_id = str(current_user.get("_id") or current_user.get("id") or "")
+    beneficiary = await find_user_by_id(
+        db, str(request_record.get("beneficiary_id") or "")
+    )
+    if not beneficiary or str(beneficiary.get("assigned_pds_officer_id") or "") != officer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This request belongs to a beneficiary assigned to another officer.",
+        )
 
 
 @router.get("/ipfs-documents")
@@ -425,6 +497,30 @@ async def list_ipfs_documents(
             )
     documents.sort(key=lambda item: item["submittedAt"] or "", reverse=True)
     return {"success": True, "documents": documents[:500]}
+
+
+@router.get("/{request_id}")
+async def get_change_request(
+    request_id: str,
+    current_user: dict = Depends(
+        require_roles(["PDS_OFFICER", "ADMIN", "SOC_ANALYST"])
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    records = await _find_requests(
+        db,
+        select(ChangeRequestRecord).where(ChangeRequestRecord.id == request_id),
+        {"id": request_id},
+        limit=1,
+    )
+    if not records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Change request not found.",
+        )
+    request_record = records[0]
+    await _ensure_officer_owns_request(request_record, current_user, db)
+    return {"success": True, "request": request_record}
 
 
 @router.patch("/{request_id}/withdraw")
@@ -536,6 +632,28 @@ async def review_change_request(
     current_user: dict = Depends(require_roles(["PDS_OFFICER", "ADMIN"])),
     db: AsyncSession = Depends(get_db),
 ):
+    requests = await _find_requests(
+        db,
+        select(ChangeRequestRecord).where(ChangeRequestRecord.id == request_id),
+        {"id": request_id},
+        limit=1,
+    )
+    if not requests:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Change request not found.",
+        )
+    request_record = requests[0]
+    await _ensure_officer_owns_request(request_record, current_user, db)
+    open_statuses = ["SUBMITTED", "UNDER_REVIEW", "OFFICER_VERIFICATION"]
+    if request_record.get("status") not in open_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This change request is no longer awaiting review.",
+        )
+
+    reviewer_id = str(current_user.get("_id") or current_user.get("id") or "")
+    reviewed_at = datetime.now(timezone.utc).isoformat()
     try:
         collection = _mongo_collection()
         mongo_record = None
@@ -543,15 +661,17 @@ async def review_change_request(
             try:
                 mongo_record = await run_in_threadpool(
                     lambda: collection.find_one_and_update(
-                        {"id": request_id},
+                        {
+                            "id": request_id,
+                            "beneficiary_id": request_record.get("beneficiary_id"),
+                            "status": {"$in": open_statuses},
+                        },
                         {
                             "$set": {
                                 "status": payload.status,
                                 "review_notes": payload.review_notes,
-                                "reviewed_by": str(
-                                    current_user.get("_id") or current_user.get("id") or ""
-                                ),
-                                "reviewed_at": datetime.now(timezone.utc).isoformat(),
+                                "reviewed_by": reviewer_id,
+                                "reviewed_at": reviewed_at,
                             }
                         },
                         return_document=ReturnDocument.AFTER,
@@ -563,6 +683,12 @@ async def review_change_request(
                     "MongoDB request review failed; trying SQL fallback: %s", exc
                 )
         if mongo_record:
+            log_action(
+                reviewer_id,
+                canonicalize_role(current_user.get("role", "")) or "PDS_OFFICER",
+                f"CHANGE_REQUEST_{payload.status}",
+                {"request_id": request_id, "beneficiary_id": request_record.get("beneficiary_id")},
+            )
             return {"success": True, "request": mongo_record}
 
         result = await db.execute(
@@ -574,12 +700,23 @@ async def review_change_request(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Change request not found.",
             )
+        if record.status not in open_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This change request is no longer awaiting review.",
+            )
         record.status = payload.status
         record.review_notes = payload.review_notes
-        record.reviewed_by = str(current_user.get("_id") or current_user.get("id") or "")
+        record.reviewed_by = reviewer_id
         record.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.commit()
         await db.refresh(record)
+        log_action(
+            reviewer_id,
+            canonicalize_role(current_user.get("role", "")) or "PDS_OFFICER",
+            f"CHANGE_REQUEST_{payload.status}",
+            {"request_id": request_id, "beneficiary_id": request_record.get("beneficiary_id")},
+        )
     except HTTPException:
         raise
     except SQLAlchemyError as exc:
