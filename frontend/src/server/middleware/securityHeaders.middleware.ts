@@ -12,7 +12,7 @@ export const SECURITY_HEADERS = {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "connect-src 'self' https: wss: ws:",
-    "frame-ancestors 'self' https://saikumar-d.netlify.app http://localhost:3000",
+    "frame-ancestors 'self' https://saikumardungala.netlify.app http://localhost:3000",
     "base-uri 'self'",
     "form-action 'self'",
   ].join("; "),
