@@ -12,7 +12,7 @@ export const SECURITY_HEADERS = {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "connect-src 'self' https: wss: ws:",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self' https://saikumar-d.netlify.app",
     "base-uri 'self'",
     "form-action 'self'",
   ].join("; "),
@@ -22,9 +22,6 @@ export const SECURITY_HEADERS = {
 
   // Prevent MIME type sniffing
   "X-Content-Type-Options": "nosniff",
-
-  // Prevent clickjacking via iframes
-  "X-Frame-Options": "DENY",
 
   // Referrer Policy: Send full URL for same-origin, domain-only for cross-origin HTTPS, none for HTTP
   "Referrer-Policy": "strict-origin-when-cross-origin",

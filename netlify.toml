@@ -4,3 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' https: wss: ws:; frame-ancestors 'self' https://saikumar-d.netlify.app; base-uri 'self'; form-action 'self'"
